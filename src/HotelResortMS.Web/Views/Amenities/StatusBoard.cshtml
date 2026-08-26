@@ -1,0 +1,31 @@
+@model List<HotelResortMS.Core.Entities.Amenity>
+@{
+    ViewData["Title"] = "Amenity Status Board";
+
+    string BadgeClass(HotelResortMS.Core.Entities.AmenityStatus status) => status switch
+    {
+        HotelResortMS.Core.Entities.AmenityStatus.Available => "success",
+        HotelResortMS.Core.Entities.AmenityStatus.Reserved => "info",
+        HotelResortMS.Core.Entities.AmenityStatus.InUse => "primary",
+        HotelResortMS.Core.Entities.AmenityStatus.Cleaning => "warning",
+        HotelResortMS.Core.Entities.AmenityStatus.Maintenance => "danger",
+        HotelResortMS.Core.Entities.AmenityStatus.OutOfService => "dark",
+        _ => "secondary"
+    };
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Amenity Status Board</h3>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">List View</a>
+</div>
+<div class="row g-2">
+@foreach (var a in Model)
+{
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <div class="border rounded p-2 bg-white text-center h-100">
+            <div class="fw-bold">@a.Name</div>
+            <div class="text-muted small">@a.AmenityCategory?.Name</div>
+            <span class="badge bg-@BadgeClass(a.Status) mt-1">@a.Status</span>
+        </div>
+    </div>
+}
+</div>

@@ -1,0 +1,42 @@
+@model HotelResortMS.Web.Models.Guests.GuestEditViewModel
+@{
+    ViewData["Title"] = "Edit Guest";
+}
+<h3 class="mb-3">Edit Guest</h3>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Edit" method="post" class="bg-white p-3 rounded border" style="max-width:560px">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-6 mb-3"><label asp-for="FirstName" class="form-label"></label><input asp-for="FirstName" class="form-control" /></div>
+        <div class="col-6 mb-3"><label asp-for="LastName" class="form-label"></label><input asp-for="LastName" class="form-control" /></div>
+    </div>
+    <div class="row">
+        <div class="col-6 mb-3"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /></div>
+        <div class="col-6 mb-3"><label asp-for="Phone" class="form-label"></label><input asp-for="Phone" class="form-control" /></div>
+    </div>
+    <div class="mb-3"><label asp-for="Address" class="form-label"></label><input asp-for="Address" class="form-control" /></div>
+    <div class="row">
+        <div class="col-6 mb-3"><label asp-for="City" class="form-label"></label><input asp-for="City" class="form-control" /></div>
+        <div class="col-6 mb-3"><label asp-for="Country" class="form-label"></label><input asp-for="Country" class="form-control" /></div>
+    </div>
+    <div class="row">
+        <div class="col-6 mb-3"><label asp-for="GuestType" class="form-label"></label><input asp-for="GuestType" class="form-control" /></div>
+        <div class="col-6 mb-3"><label asp-for="CompanyName" class="form-label"></label><input asp-for="CompanyName" class="form-control" /></div>
+    </div>
+
+    <div class="row border-top pt-2 mt-2">
+        <div class="col-6 mb-3">
+            <div class="form-check"><input asp-for="IsSeniorCitizen" class="form-check-input" /><label asp-for="IsSeniorCitizen" class="form-check-label"></label></div>
+            <input asp-for="SeniorCitizenIdNumber" class="form-control form-control-sm mt-1" />
+        </div>
+        <div class="col-6 mb-3">
+            <div class="form-check"><input asp-for="IsPwd" class="form-check-input" /><label asp-for="IsPwd" class="form-check-label"></label></div>
+            <input asp-for="PwdIdNumber" class="form-control form-control-sm mt-1" />
+        </div>
+    </div>
+
+    <div class="mb-3"><label asp-for="Notes" class="form-label"></label><textarea asp-for="Notes" class="form-control"></textarea></div>
+    <div class="form-check mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

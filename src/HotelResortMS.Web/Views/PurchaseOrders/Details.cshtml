@@ -1,0 +1,77 @@
+@model HotelResortMS.Core.Entities.PurchaseOrder
+@{
+    ViewData["Title"] = "Purchase Order " + Model.PONumber;
+    var receivings = (List<HotelResortMS.Core.Entities.Receiving>)ViewBag.Receivings;
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="mb-0">@Model.PONumber</h3>
+        <p class="text-muted mb-0">@Model.Supplier?.Name &middot; Ordered @Model.OrderDate.ToString("yyyy-MM-dd") &middot; <span class="badge bg-secondary">@Model.Status</span></p>
+    </div>
+    <div>
+        @if (Model.Status == HotelResortMS.Core.Entities.PurchaseOrderStatus.Draft)
+        {
+            <form asp-action="Submit" asp-route-id="@Model.Id" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm btn-primary">Submit</button>
+            </form>
+        }
+        @if (Model.Status is HotelResortMS.Core.Entities.PurchaseOrderStatus.Submitted or HotelResortMS.Core.Entities.PurchaseOrderStatus.PartiallyReceived)
+        {
+            <a asp-action="Receive" asp-route-id="@Model.Id" class="btn btn-sm btn-success">Receive</a>
+        }
+        @if (Model.Status is HotelResortMS.Core.Entities.PurchaseOrderStatus.Draft or HotelResortMS.Core.Entities.PurchaseOrderStatus.Submitted)
+        {
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancel</button>
+        }
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Back</a>
+    </div>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+
+<div class="table-responsive mb-4">
+<table class="table table-sm bg-white">
+    <thead><tr><th>Item</th><th class="text-end">Ordered</th><th class="text-end">Received</th><th class="text-end">Unit Cost</th><th class="text-end">Line Total</th></tr></thead>
+    <tbody>
+    @foreach (var d in Model.Details)
+    {
+        <tr>
+            <td>@d.InventoryItem?.Name</td>
+            <td class="text-end">@d.QuantityOrdered.ToString("N2")</td>
+            <td class="text-end">@d.QuantityReceived.ToString("N2")</td>
+            <td class="text-end">@d.UnitCost.ToString("N2")</td>
+            <td class="text-end">@((d.QuantityOrdered * d.UnitCost).ToString("N2"))</td>
+        </tr>
+    }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="4">Total</td><td class="text-end">@Model.TotalAmount.ToString("N2")</td></tr></tfoot>
+</table>
+</div>
+
+<h5>Receiving History</h5>
+<div class="table-responsive">
+<table class="table table-sm bg-white">
+    <thead><tr><th>Receiving #</th><th>Date</th><th>Received By</th></tr></thead>
+    <tbody>
+    @foreach (var r in receivings)
+    {
+        <tr><td>@r.ReceivingNumber</td><td>@r.ReceivedDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td><td>@r.ReceivedBy</td></tr>
+    }
+    </tbody>
+</table>
+</div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <div class="modal-header"><h5 class="modal-title">Cancel Purchase Order @Model.PONumber</h5></div>
+            <div class="modal-body"><input type="text" name="reason" class="form-control" placeholder="Reason (required)" required /></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-danger">Cancel Order</button>
+            </div>
+        </form>
+    </div></div>
+</div>

@@ -1,0 +1,62 @@
+@model HotelResortMS.Web.Models.Inventory.PurchaseOrderCreateViewModel
+@{
+    ViewData["Title"] = "Add Purchase Order";
+}
+<h3 class="mb-3">Add Purchase Order</h3>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Create" method="post" class="bg-white p-3 rounded border" style="max-width:720px">
+    <div class="row">
+        <div class="col-6 mb-3">
+            <label class="form-label">Supplier</label>
+            <select name="SupplierId" class="form-select">
+                <option value="">-- Select --</option>
+                @foreach (var s in Model.Suppliers)
+                {
+                    <option value="@s.Id">@s.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-3 mb-3"><label class="form-label">Order Date</label><input type="date" name="OrderDate" value="@Model.OrderDate.ToString("yyyy-MM-dd")" class="form-control" /></div>
+        <div class="col-3 mb-3"><label class="form-label">Expected Date</label><input type="date" name="ExpectedDate" class="form-control" /></div>
+    </div>
+
+    <div class="table-responsive">
+    <table class="table table-sm" id="linesTable">
+        <thead><tr><th>Item</th><th style="width:120px">Quantity</th><th style="width:140px">Unit Cost</th><th></th></tr></thead>
+        <tbody></tbody>
+    </table>
+    </div>
+    <button type="button" id="addLine" class="btn btn-sm btn-outline-secondary mb-3">+ Add Line</button>
+    <div>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    var itemOptions = '<option value="">-- Select --</option>' +
+        '@Html.Raw(string.Join("", Model.InventoryItems.Select(i => $"<option value='{i.Id}' data-cost='{i.Cost.ToString(System.Globalization.CultureInfo.InvariantCulture)}'>{System.Net.WebUtility.HtmlEncode(i.Name)}</option>")))';
+    var lineIndex = 0;
+
+    function addLine() {
+        var row = document.createElement('tr');
+        row.innerHTML =
+            '<td><select name="Lines[' + lineIndex + '].InventoryItemId" class="form-select form-select-sm item-select">' + itemOptions + '</select></td>' +
+            '<td><input type="number" step="0.01" name="Lines[' + lineIndex + '].QuantityOrdered" class="form-control form-control-sm" /></td>' +
+            '<td><input type="number" step="0.01" name="Lines[' + lineIndex + '].UnitCost" class="form-control form-control-sm cost-input" /></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger remove-row">&times;</button></td>';
+        document.querySelector('#linesTable tbody').appendChild(row);
+        lineIndex++;
+
+        row.querySelector('.remove-row').addEventListener('click', function () { row.remove(); });
+        row.querySelector('.item-select').addEventListener('change', function (e) {
+            var opt = e.target.selectedOptions[0];
+            row.querySelector('.cost-input').value = opt.dataset.cost || '';
+        });
+    }
+
+    document.getElementById('addLine').addEventListener('click', addLine);
+    addLine();
+</script>
+}

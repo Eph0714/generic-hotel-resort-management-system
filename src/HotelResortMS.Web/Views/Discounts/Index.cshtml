@@ -1,0 +1,43 @@
+@model List<HotelResortMS.Core.Entities.Discount>
+@{
+    ViewData["Title"] = "Discounts";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Discounts</h3>
+    <a asp-action="Create" class="btn btn-primary btn-sm">+ Add New</a>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+<div class="table-responsive">
+<table class="table table-sm table-hover bg-white">
+    <thead><tr><th>Name</th><th>Type</th><th>Calculation</th><th>Amount</th><th>Effective</th><th>Expires</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    @foreach (var d in Model)
+    {
+        <tr>
+            <td>@d.Name</td>
+            <td>@d.Type</td>
+            <td>@d.CalculationType</td>
+            <td>@(d.CalculationType == HotelResortMS.Core.Entities.DiscountCalculationType.Percentage ? $"{d.Percentage}%" : d.FixedAmount.ToString("N2"))</td>
+            <td>@d.EffectiveDate.ToString("yyyy-MM-dd")</td>
+            <td>@(d.ExpirationDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+            <td>@(d.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end">
+                <a asp-action="Edit" asp-route-id="@d.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                @if (d.IsActive)
+                {
+                    <form asp-action="Deactivate" asp-route-id="@d.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Deactivate</button>
+                    </form>
+                }
+                <form asp-action="Delete" asp-route-id="@d.Id" method="post" class="d-inline" onsubmit="return confirm('Permanently delete this discount? This cannot be undone. It will be blocked if it has any history.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

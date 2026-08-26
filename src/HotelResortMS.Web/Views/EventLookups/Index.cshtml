@@ -1,0 +1,41 @@
+@model List<HotelResortMS.Web.Models.Operations.EventLookupItemViewModel>
+@{
+    var type = (HotelResortMS.Web.Models.Operations.EventLookupType)ViewBag.Type;
+    ViewData["Title"] = type.ToString();
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">@type</h3>
+    <a asp-action="Create" asp-route-type="@type" class="btn btn-primary btn-sm">+ Add New</a>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+<div class="table-responsive">
+<table class="table table-sm table-hover bg-white">
+    <thead><tr><th>Name</th><th>Description</th>@if (type == HotelResortMS.Web.Models.Operations.EventLookupType.EventVenue) { <th>Capacity</th> }<th>Status</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Name</td>
+            <td>@item.Description</td>
+            @if (type == HotelResortMS.Web.Models.Operations.EventLookupType.EventVenue) { <td>@item.Capacity</td> }
+            <td>@(item.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end">
+                <a asp-action="Edit" asp-route-type="@type" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                @if (item.IsActive)
+                {
+                    <form asp-action="Deactivate" asp-route-type="@type" asp-route-id="@item.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Deactivate</button>
+                    </form>
+                }
+                <form asp-action="Delete" asp-route-type="@type" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Permanently delete this item? This cannot be undone. It will be blocked if it is still in use.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

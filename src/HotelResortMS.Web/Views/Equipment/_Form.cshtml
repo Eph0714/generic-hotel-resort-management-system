@@ -1,0 +1,18 @@
+@model HotelResortMS.Web.Models.Operations.EquipmentEditViewModel
+<input type="hidden" asp-for="Id" />
+<div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /></div>
+<div class="mb-3"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control"></textarea></div>
+<div class="mb-3">
+    <label asp-for="RoomId" class="form-label">Room (optional)</label>
+    <select asp-for="RoomId" class="form-select">
+        <option value="">-- None --</option>
+        @foreach (var r in Model.Rooms)
+        {
+            <option value="@r.Id">@r.RoomNumber</option>
+        }
+    </select>
+</div>
+@if (Model.Id != 0)
+{
+    <div class="form-check mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+}

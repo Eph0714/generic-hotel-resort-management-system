@@ -1,0 +1,32 @@
+# Template for the project's MySQL 8.4 instance.
+# scripts/mysql-init.ps1 substitutes the placeholders and writes the result to
+# %LOCALAPPDATA%\GenericHotelResortMS\mysql84\my.ini
+#
+# Isolated from any other MySQL install on the machine: its own port, its own
+# data directory under the user profile, and the X Protocol switched off.
+
+[mysqld]
+basedir  = "{{BASEDIR}}"
+datadir  = "{{INSTANCEDIR}}/data"
+port     = {{PORT}}
+bind-address = 127.0.0.1
+mysqlx   = OFF
+
+log-error = "{{INSTANCEDIR}}/mysql84-error.log"
+
+# All storage in UTC; the application renders in each client's timezone.
+default-time-zone = "+00:00"
+
+character-set-server = utf8mb4
+collation-server     = utf8mb4_0900_ai_ci
+
+# Fail loudly on bad data rather than silently truncating it.
+sql-mode = "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+
+max_connections = 200
+innodb_buffer_pool_size = 512M
+innodb_flush_log_at_trx_commit = 2
+
+[client]
+port = {{PORT}}
+default-character-set = utf8mb4

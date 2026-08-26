@@ -1,0 +1,46 @@
+@model HotelResortMS.Web.Models.Sales.ProductEditViewModel
+@{
+    ViewData["Title"] = "Edit Product";
+}
+<h3 class="mb-3">Edit Product</h3>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Edit" method="post" class="bg-white p-3 rounded border" style="max-width:560px">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-6 mb-3"><label asp-for="Sku" class="form-label"></label><input asp-for="Sku" class="form-control" /></div>
+        <div class="col-6 mb-3">
+            <label asp-for="ProductCategoryId" class="form-label"></label>
+            <select asp-for="ProductCategoryId" class="form-select">
+                @foreach (var c in Model.Categories)
+                {
+                    <option value="@c.Id">@c.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control"></textarea></div>
+    <div class="row">
+        <div class="col-4 mb-3">
+            <label asp-for="Type" class="form-label"></label>
+            <select asp-for="Type" class="form-select" asp-items="Html.GetEnumSelectList<HotelResortMS.Core.Entities.ProductType>()"></select>
+        </div>
+        <div class="col-4 mb-3"><label asp-for="UnitPrice" class="form-label"></label><input asp-for="UnitPrice" type="number" step="0.01" class="form-control" /></div>
+        <div class="col-4 mb-3"><label asp-for="Cost" class="form-label"></label><input asp-for="Cost" type="number" step="0.01" class="form-control" /></div>
+    </div>
+    <div class="form-check mb-2"><input asp-for="TrackInventory" class="form-check-input" /><label asp-for="TrackInventory" class="form-check-label">Track inventory</label></div>
+    <div class="mb-3">
+        <label asp-for="InventoryItemId" class="form-label"></label>
+        <select asp-for="InventoryItemId" class="form-select">
+            <option value="">-- None (use a Recipe instead) --</option>
+            @foreach (var i in Model.InventoryItems)
+            {
+                <option value="@i.Id">@i.Name</option>
+            }
+        </select>
+    </div>
+    <div class="form-check mb-2"><input asp-for="DiscountEligible" class="form-check-input" /><label asp-for="DiscountEligible" class="form-check-label"></label></div>
+    <div class="form-check mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

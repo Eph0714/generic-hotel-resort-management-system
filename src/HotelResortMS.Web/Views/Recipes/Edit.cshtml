@@ -1,0 +1,59 @@
+@model HotelResortMS.Web.Models.Inventory.RecipeEditViewModel
+@{
+    ViewData["Title"] = "Recipe - " + Model.ProductName;
+}
+<h3 class="mb-3">Recipe - @Model.ProductName</h3>
+
+<form asp-action="Edit" method="post" class="bg-white p-3 rounded border" style="max-width:640px">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="productId" value="@Model.ProductId" />
+
+    <div class="mb-3"><label class="form-label">Notes</label><textarea name="notes" class="form-control">@Model.Notes</textarea></div>
+
+    <div class="table-responsive">
+    <table class="table table-sm" id="componentsTable">
+        <thead><tr><th>Ingredient</th><th style="width:140px">Quantity per unit</th><th></th></tr></thead>
+        <tbody>
+        @for (var i = 0; i < Model.Components.Count; i++)
+        {
+            <tr>
+                <td>
+                    <select name="itemId" class="form-select form-select-sm">
+                        @foreach (var item in Model.AvailableItems)
+                        {
+                            <option value="@item.Id" selected="@(item.Id == Model.Components[i].InventoryItemId)">@item.Name (@item.UnitOfMeasure?.Abbreviation)</option>
+                        }
+                    </select>
+                </td>
+                <td><input type="number" step="0.0001" name="quantity" value="@Model.Components[i].QuantityRequired" class="form-control form-control-sm" /></td>
+                <td><button type="button" class="btn btn-sm btn-outline-danger remove-row">&times;</button></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <button type="button" id="addRow" class="btn btn-sm btn-outline-secondary mb-3">+ Add Ingredient</button>
+    <div>
+        <button type="submit" class="btn btn-primary">Save Recipe</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    var availableItemsHtml = '@Html.Raw(string.Join("", Model.AvailableItems.Select(i => $"<option value='{i.Id}'>{System.Net.WebUtility.HtmlEncode(i.Name)} ({i.UnitOfMeasure?.Abbreviation})</option>")))';
+
+    document.getElementById('addRow').addEventListener('click', function () {
+        var row = document.createElement('tr');
+        row.innerHTML = '<td><select name="itemId" class="form-select form-select-sm">' + availableItemsHtml + '</select></td>' +
+            '<td><input type="number" step="0.0001" name="quantity" value="1" class="form-control form-control-sm" /></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger remove-row">&times;</button></td>';
+        document.querySelector('#componentsTable tbody').appendChild(row);
+        row.querySelector('.remove-row').addEventListener('click', function () { row.remove(); });
+    });
+
+    document.querySelectorAll('.remove-row').forEach(function (btn) {
+        btn.addEventListener('click', function () { btn.closest('tr').remove(); });
+    });
+</script>
+}

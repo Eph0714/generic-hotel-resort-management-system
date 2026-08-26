@@ -1,0 +1,18 @@
+@model HotelResortMS.Web.Models.Inventory.StockAdjustmentViewModel
+@{
+    ViewData["Title"] = "Adjust Stock - " + Model.ItemName;
+}
+<h3 class="mb-3">Adjust Stock - @Model.ItemName</h3>
+<p class="text-muted">Current Stock: <strong>@Model.CurrentStock.ToString("N2")</strong></p>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Adjust" method="post" class="bg-white p-3 rounded border" style="max-width:420px">
+    <input type="hidden" asp-for="InventoryItemId" />
+    <div class="mb-3">
+        <label asp-for="Type" class="form-label"></label>
+        <select asp-for="Type" class="form-select" asp-items="Html.GetEnumSelectList<HotelResortMS.Core.Entities.InventoryTransactionType>()"></select>
+    </div>
+    <div class="mb-3"><label asp-for="Quantity" class="form-label">Quantity (enter as a positive number)</label><input asp-for="Quantity" type="number" step="0.01" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Notes" class="form-label"></label><textarea asp-for="Notes" class="form-control"></textarea></div>
+    <button type="submit" class="btn btn-primary">Post Adjustment</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

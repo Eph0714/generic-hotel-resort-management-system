@@ -1,0 +1,17 @@
+# .NET build output
+bin/
+obj/
+*.user
+
+# Real MySQL dumps produced by Backup & Restore - contains real data (password hashes,
+# settings, seeded/test records), not source, and regenerable on demand - never committed.
+Backups/
+
+# User-uploaded branding assets (logo/banner) - managed runtime content, not source.
+src/HotelResortMS.Web/wwwroot/uploads/
+
+# IDE / OS
+.vs/
+.vscode/
+Thumbs.db
+.DS_Store

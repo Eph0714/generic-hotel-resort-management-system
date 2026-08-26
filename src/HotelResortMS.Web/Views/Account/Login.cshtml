@@ -1,0 +1,139 @@
+@using HotelResortMS.Core.Interfaces
+@model HotelResortMS.Web.Models.Account.LoginViewModel
+@inject IHotelBrandingService HotelBranding
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = null;
+    var branding = await HotelBranding.GetBrandingAsync();
+    var year = DateTime.Now.Year;
+    // No public self-registration exists anywhere in this system (accounts are created
+    // by an administrator under Admin > Users) - the spec's Sign Up section is hidden
+    // entirely rather than shown as a dead link, per its own "if the system does not
+    // allow public registration, hide this section" instruction.
+    var allowsPublicRegistration = false;
+}
+<!DOCTYPE html>
+<html lang="en" data-theme="@branding.Theme.ToLowerInvariant()">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In - @branding.Name</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card">
+            <div class="login-brand-panel">
+                <div class="login-brand-lines" aria-hidden="true"></div>
+
+                <div class="login-brand-top">
+                    @if (branding.LogoUrl is not null)
+                    {
+                        <img src="@branding.LogoUrl" alt="" class="login-brand-logo-img" />
+                    }
+                    else
+                    {
+                        <span class="login-brand-logo-icon" aria-hidden="true">&#127976;</span>
+                    }
+                    <span class="login-brand-name">@branding.Name</span>
+                </div>
+
+                <div class="login-brand-mid">
+                    <h1>Hello, Welcome!</h1>
+                    <p>Sign in to manage reservations, front desk operations, housekeeping, and everything else that keeps @branding.Name running smoothly.</p>
+                </div>
+
+                <div class="login-brand-foot">&copy; @year @branding.Name</div>
+            </div>
+
+            <div class="login-form-panel">
+                <div class="login-form-inner">
+                    <h2>Sign In</h2>
+                    <p class="login-subtitle">Enter your credentials to access your account.</p>
+
+                    <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+                    <form asp-controller="Account" asp-action="Login" method="post" id="loginForm">
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div class="login-field">
+                            <label asp-for="Email"></label>
+                            <div class="login-input-wrap">
+                                <span class="login-input-icon" aria-hidden="true">&#128100;</span>
+                                <input asp-for="Email" class="form-control" autofocus placeholder="Enter your username" autocomplete="username" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="login-field">
+                            <label asp-for="Password"></label>
+                            <div class="login-input-wrap">
+                                <span class="login-input-icon" aria-hidden="true">&#128274;</span>
+                                <input asp-for="Password" id="passwordInput" class="form-control" placeholder="Enter your password" autocomplete="current-password" />
+                                <button type="button" class="login-toggle-password" id="togglePassword" aria-label="Show password" aria-pressed="false">
+                                    <span aria-hidden="true">&#128065;</span>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="login-options">
+                            <div class="form-check">
+                                <input asp-for="RememberMe" class="form-check-input" />
+                                <label asp-for="RememberMe" class="form-check-label"></label>
+                            </div>
+                            @* No password-reset flow exists yet in this system - a live link to a
+                               page that doesn't exist would be a dead/fake feature, so this stays
+                               plain text rather than a clickable link. *@
+                            <span class="login-forgot-note" style="cursor:default; opacity:.85;" title="Contact your system administrator to reset your password.">Forgot Password?</span>
+                        </div>
+
+                        <button type="submit" class="login-btn" id="loginBtn">
+                            <span class="login-btn-text">Login</span>
+                        </button>
+                    </form>
+
+                    @if (allowsPublicRegistration)
+                    {
+                        <div class="login-signup-note">
+                            Not a member yet? <a href="#" class="login-signup-btn">Sign Up</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        (function () {
+            var toggle = document.getElementById('togglePassword');
+            var input = document.getElementById('passwordInput');
+            if (toggle && input) {
+                toggle.addEventListener('click', function () {
+                    var showing = input.type === 'text';
+                    input.type = showing ? 'password' : 'text';
+                    toggle.setAttribute('aria-pressed', String(!showing));
+                    toggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+                });
+            }
+        })();
+
+        // Loading state: only shown once jQuery Validate confirms the form is actually
+        // valid and the real POST is proceeding - never blocks a failed client-side
+        // validation from letting the user see and fix the error messages.
+        $(function () {
+            var $form = $('#loginForm');
+            var $btn = $('#loginBtn');
+            $form.on('submit', function () {
+                if ($form.valid()) {
+                    $btn.prop('disabled', true);
+                    $btn.find('.login-btn-text').text('Signing in...');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

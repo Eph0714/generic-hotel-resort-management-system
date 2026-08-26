@@ -1,0 +1,33 @@
+@model HotelResortMS.Web.Models.Reports.ReservationReportViewModel
+@{
+    ViewData["Title"] = "Reservation Reports";
+}
+<h3 class="mb-3">Reservation Reports</h3>
+@await Html.PartialAsync("_FilterBar", Model.Range)
+
+<div class="row g-3 mb-3">
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-label">In Range</div><div class="stat-value">@Model.Reservations.Count</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-label">Upcoming</div><div class="stat-value">@Model.Upcoming.Count</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-label">Cancelled</div><div class="stat-value">@Model.Cancelled.Count</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-label">No-Shows</div><div class="stat-value">@Model.NoShows.Count</div></div></div>
+</div>
+<p class="text-muted">Reservation Revenue (net of discount, excludes Cancelled): <strong>@Model.ReservationRevenue.ToString("N2")</strong></p>
+
+<div class="table-responsive">
+<table class="table table-sm bg-white">
+    <thead><tr><th>Reservation #</th><th>Guest</th><th>Check-In</th><th>Check-Out</th><th>Status</th><th class="text-end">Total</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model.Reservations)
+    {
+        <tr>
+            <td>@r.ReservationNumber</td>
+            <td>@(r.Guest is null ? "-" : $"{r.Guest.LastName}, {r.Guest.FirstName}")</td>
+            <td>@r.CheckInDate.ToString("yyyy-MM-dd")</td>
+            <td>@r.CheckOutDate.ToString("yyyy-MM-dd")</td>
+            <td><span class="badge bg-secondary">@r.Status</span></td>
+            <td class="text-end">@r.TotalAmount.ToString("N2")</td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

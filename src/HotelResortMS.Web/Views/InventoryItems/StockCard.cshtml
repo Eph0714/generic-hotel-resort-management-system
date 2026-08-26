@@ -1,0 +1,31 @@
+@model List<HotelResortMS.Core.Entities.InventoryTransaction>
+@{
+    var item = (HotelResortMS.Core.Entities.InventoryItem)ViewBag.Item;
+    ViewData["Title"] = "Stock Card - " + item.Name;
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="mb-0">@item.Name</h3>
+        <p class="text-muted mb-0">Current Stock: <strong>@item.CurrentStock.ToString("N2") @item.UnitOfMeasure?.Abbreviation</strong></p>
+    </div>
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Back to Inventory</a>
+</div>
+
+<div class="table-responsive">
+<table class="table table-sm bg-white">
+    <thead><tr><th>Date/Time</th><th>Type</th><th class="text-end">Quantity</th><th>Reference</th><th>Notes</th><th>By</th></tr></thead>
+    <tbody>
+    @foreach (var t in Model)
+    {
+        <tr>
+            <td>@t.ActualDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+            <td>@t.Type</td>
+            <td class="text-end @(t.Quantity < 0 ? "text-danger" : "text-success")">@t.Quantity.ToString("N2")</td>
+            <td>@t.ReferenceType @t.ReferenceId</td>
+            <td>@t.Notes</td>
+            <td>@t.RecordedBy</td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

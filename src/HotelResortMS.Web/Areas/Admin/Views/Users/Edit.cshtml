@@ -1,0 +1,38 @@
+@model HotelResortMS.Web.Areas.Admin.Models.UserEditViewModel
+@{
+    ViewData["Title"] = "Edit User";
+}
+<h3 class="mb-3">Edit User</h3>
+
+<div asp-validation-summary="All" class="text-danger"></div>
+
+<form asp-action="Edit" method="post" class="bg-white p-3 rounded border" style="max-width:480px">
+    <input type="hidden" asp-for="Id" />
+    <div class="mb-3">
+        <label asp-for="FullName" class="form-label"></label>
+        <input asp-for="FullName" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="EmployeeNumber" class="form-label"></label>
+        <input asp-for="EmployeeNumber" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="RoleId" class="form-label"></label>
+        <select asp-for="RoleId" class="form-select">
+            @foreach (var r in Model.AvailableRoles)
+            {
+                <option value="@r.Id">@r.Name</option>
+            }
+        </select>
+    </div>
+    <div class="form-check mb-3">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label"></label>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

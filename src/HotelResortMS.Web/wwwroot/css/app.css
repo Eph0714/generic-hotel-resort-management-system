@@ -1,0 +1,1282 @@
+/* Application Theme (Admin > System Settings > Branding & Theme > App.Theme).
+   Everything below reads surface/text colors from these variables rather than
+   hardcoding hex values, so a single [data-theme="dark"] override block (further
+   down) is enough to re-skin the whole shell - no per-component branching needed.
+   The sidebar itself stays a fixed dark navy in both themes (it already reads as
+   a dark rail, same as most admin dashboards), only the light-surface chrome
+   (page background, cards, topbar, forms) actually changes with the theme. */
+:root {
+    --sidebar-width: 250px;
+    --sidebar-width-collapsed: 60px;
+    --topbar-height: 56px;
+    --sidebar-bg: #0b1526;
+    --sidebar-fg: #c9d4de;
+    --sidebar-fg-active: #ffffff;
+    --sidebar-accent: #2f6fed;
+    --success: #1e9e6a;
+    --warning: #d97706;
+    --danger: #dc3545;
+    --info: #2f6fed;
+
+    --page-bg: #f4f6f9;
+    --card-bg: #ffffff;
+    --card-border: #e3e7ec;
+    --divider: #eef1f5;
+    --text-body: #1f2937;
+    --text-muted: #6b7684;
+    --text-faint: #8a93a3;
+
+    /* One navy blue for every button app-wide (Section: global button color) - replaces
+       Bootstrap's stock per-variant colors entirely, so Save/Cancel/Delete/etc. all read
+       as the same consistent brand color instead of a rainbow of contextual colors. */
+    --navy: #16305c;
+    --navy-hover: #1e3f78;
+    --navy-active: #0f2246;
+    --navy-border: #0f2246;
+}
+
+/* Theme Color (Admin > System Settings > Branding & Theme > App.ThemeColor) used to be
+   six fixed named palettes selected via a [data-color="X"] attribute - now it's a single
+   free-choice hex color (same picker UX as the Dashboard Banner Color), so --navy/
+   --navy-hover/--navy-active/--navy-border/--sidebar-accent/--sidebar-bg are instead
+   computed from that one color and set directly as inline styles on <html> by a small
+   script in _Layout.cshtml's <head> (see there) - an inline style always beats a CSS
+   rule's specificity, so no [data-color] selector block is needed here at all any more. */
+
+[data-theme="dark"] {
+    /* --sidebar-bg deliberately NOT overridden here - the sidebar's dark rail color is
+       fully owned by the inline script's computed shade (see above), so it stays tinted
+       to the chosen theme color in both Light and Dark. */
+    --page-bg: #10131a;
+    --card-bg: #1a1f28;
+    --card-border: #2b3240;
+    --divider: #2b3240;
+    --text-body: #e5e9f0;
+    --text-muted: #a3adbd;
+    --text-faint: #8892a3;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--page-bg);
+    color: var(--text-body);
+}
+
+/* ================= Global button color: navy blue everywhere, EXCEPT the standard
+   CRUD trio (Add/Edit/Delete) ================= *
+ * Every Bootstrap button variant used across the app - solid and outline alike -
+ * collapses to one filled navy blue with white text, instead of Bootstrap's stock
+ * per-context colors (blue/green/red/yellow/etc.). `!important` is deliberate here:
+ * this is a whole-app color-system override of a third-party framework's own button
+ * colors, not something that should depend on cascade order in ~90 individual views.
+ * `.btn-link` is deliberately excluded - it's a plain text link styled minimally
+ * (e.g. the red "Remove logo/banner" actions in System Settings), not a filled button,
+ * and turning a danger-signaling red link navy would erase that warning. `.btn-close`
+ * (modal dismiss X) is a Bootstrap icon control, also excluded.
+ *
+ * CARVE-OUT (this section): across the module/report Index screens, the established
+ * convention is Add New = solid `.btn-primary`, Edit = `.btn-outline-primary`, Delete =
+ * solid `.btn-danger`, Deactivate = `.btn-outline-danger` - so these four are pulled out
+ * of the generic navy list below and given their own standard, industry-conventional
+ * colors instead (green=Add, blue=Edit, red=Delete/Deactivate) so the three actions read
+ * as visually distinct at a glance. Every other variant (`.btn-secondary`, `.btn-success`,
+ * `.btn-warning`, `.btn-info`, `.btn-light`, `.btn-dark`, and their outline forms) stays
+ * plain navy exactly as before. NOTE: a handful of Create/Edit FORM "Save" submit buttons
+ * also happen to use plain `.btn-primary` (same class as "+ Add New") since that's the
+ * pre-existing convention in this codebase - those will read green too, which is
+ * correct for Create forms but not perfectly distinct from Edit for Edit forms; fixing
+ * that would mean auditing/re-classing ~30 individual Edit view submit buttons, which
+ * was out of scope for this pass. */
+.btn-secondary, .btn-success, .btn-warning, .btn-info, .btn-light, .btn-dark,
+.btn-outline-secondary, .btn-outline-success,
+.btn-outline-warning, .btn-outline-info, .btn-outline-light, .btn-outline-dark {
+    background-color: var(--navy) !important;
+    border-color: var(--navy-border) !important;
+    color: #fff !important;
+}
+
+.btn-secondary:hover, .btn-success:hover, .btn-warning:hover,
+.btn-info:hover, .btn-light:hover, .btn-dark:hover,
+.btn-outline-secondary:hover, .btn-outline-success:hover,
+.btn-outline-warning:hover, .btn-outline-info:hover, .btn-outline-light:hover, .btn-outline-dark:hover,
+.btn-check:checked + .btn-outline-secondary {
+    background-color: var(--navy-hover) !important;
+    border-color: var(--navy-hover) !important;
+    color: #fff !important;
+}
+
+.btn-secondary:active, .btn-success:active, .btn-warning:active,
+.btn-info:active, .btn-light:active, .btn-dark:active,
+.btn-outline-secondary:active, .btn-outline-success:active,
+.btn-outline-warning:active, .btn-outline-info:active, .btn-outline-light:active, .btn-outline-dark:active,
+.btn-outline-secondary.active {
+    background-color: var(--navy-active) !important;
+    border-color: var(--navy-active) !important;
+    color: #fff !important;
+}
+
+.btn-secondary:focus, .btn-success:focus, .btn-warning:focus,
+.btn-info:focus, .btn-light:focus, .btn-dark:focus,
+.btn-outline-secondary:focus, .btn-outline-success:focus,
+.btn-outline-warning:focus, .btn-outline-info:focus, .btn-outline-light:focus, .btn-outline-dark:focus {
+    box-shadow: 0 0 0 .2rem rgba(22, 48, 92, .35) !important;
+}
+
+.btn-secondary .badge, .btn-success .badge,
+.btn-warning .badge, .btn-info .badge, .btn-light .badge, .btn-dark .badge,
+.btn-outline-secondary .badge, .btn-outline-success .badge,
+.btn-outline-warning .badge, .btn-outline-info .badge,
+.btn-outline-light .badge, .btn-outline-dark .badge {
+    background-color: #fff !important;
+    color: var(--navy) !important;
+}
+
+/* --- Add (Create) = green, solid `.btn-primary` - the standard "positive/create"
+   color, used for every "+ Add New" header button and Create-form Save button. --- */
+.btn-primary {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+    color: #fff !important;
+}
+.btn-primary:hover { background-color: #157347 !important; border-color: #146c43 !important; color: #fff !important; }
+.btn-primary:active, .btn-primary.active { background-color: #146c43 !important; border-color: #13653f !important; color: #fff !important; }
+.btn-primary:focus { box-shadow: 0 0 0 .2rem rgba(25, 135, 84, .35) !important; }
+.btn-primary .badge { background-color: #fff !important; color: #198754 !important; }
+
+/* --- Edit = blue, `.btn-outline-primary` - the standard "modify" color, used for every
+   per-row Edit button across the module Index screens. Kept as a true outline (not
+   filled) so Edit reads as a lighter-weight action than the filled Add/Delete buttons,
+   same visual weighting convention Bootstrap itself uses. --- */
+.btn-outline-primary {
+    background-color: transparent !important;
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+}
+.btn-outline-primary:hover { background-color: #0d6efd !important; border-color: #0d6efd !important; color: #fff !important; }
+.btn-outline-primary:active, .btn-outline-primary.active { background-color: #0a58ca !important; border-color: #0a53be !important; color: #fff !important; }
+.btn-outline-primary:focus { box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .35) !important; }
+.btn-outline-primary .badge { background-color: #0d6efd !important; color: #fff !important; }
+
+/* --- Delete = red, solid `.btn-danger` - the standard "destructive" color, used for
+   every per-row hard-Delete button across the module Index screens. --- */
+.btn-danger {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #fff !important;
+}
+.btn-danger:hover { background-color: #bb2d3b !important; border-color: #b02a37 !important; color: #fff !important; }
+.btn-danger:active, .btn-danger.active { background-color: #b02a37 !important; border-color: #a52834 !important; color: #fff !important; }
+.btn-danger:focus { box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .35) !important; }
+.btn-danger .badge { background-color: #fff !important; color: #dc3545 !important; }
+
+/* --- Deactivate = red outline, `.btn-outline-danger` - same red family as Delete but as
+   an outline, since it's a lesser/reversible action (not a permanent hard delete). --- */
+.btn-outline-danger {
+    background-color: transparent !important;
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+}
+.btn-outline-danger:hover { background-color: #dc3545 !important; border-color: #dc3545 !important; color: #fff !important; }
+.btn-outline-danger:active, .btn-outline-danger.active { background-color: #b02a37 !important; border-color: #a52834 !important; color: #fff !important; }
+.btn-outline-danger:focus { box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .35) !important; }
+.btn-outline-danger .badge { background-color: #dc3545 !important; color: #fff !important; }
+
+/* Real, scoped dark-mode overrides for the plain Bootstrap 5.1 form/table/dropdown/
+   card/modal chrome used throughout the CRUD screens (Bootstrap 5.1 doesn't theme
+   these via variables the way 5.3+ does, so they need explicit rules here rather
+   than "for free"). This covers the components actually used across the app's
+   views, not an exhaustive reskin of every Bootstrap class. */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    color: var(--text-body);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: var(--card-bg);
+    color: var(--text-body);
+}
+
+[data-theme="dark"] .form-control::placeholder { color: var(--text-faint); }
+[data-theme="dark"] label,
+[data-theme="dark"] .form-label { color: var(--text-body); }
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .dropdown-menu,
+[data-theme="dark"] .list-group-item {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    color: var(--text-body);
+}
+
+[data-theme="dark"] .card-header {
+    background-color: rgba(255,255,255,.03);
+    border-color: var(--card-border);
+}
+
+[data-theme="dark"] .dropdown-item { color: var(--text-body); }
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: rgba(255,255,255,.06);
+    color: var(--text-body);
+}
+
+[data-theme="dark"] .table {
+    color: var(--text-body);
+    border-color: var(--card-border);
+}
+
+[data-theme="dark"] .table > :not(caption) > * > * {
+    background-color: transparent;
+    color: var(--text-body);
+    border-bottom-color: var(--card-border);
+}
+
+[data-theme="dark"] .table-hover > tbody > tr:hover > * {
+    background-color: rgba(255,255,255,.04);
+}
+
+[data-theme="dark"] .text-muted { color: var(--text-muted) !important; }
+[data-theme="dark"] hr { border-color: var(--card-border); }
+
+/* The single biggest dark-mode readability fix: virtually every CRUD screen in this
+   app (Rooms, Guests, Reservations, Reports, etc.) wraps its table/content in
+   Bootstrap's `.bg-white` utility class, which ships with `!important`. Left alone,
+   that forces a solid white background under this theme's light-colored text -
+   unreadable. Overriding it here (with matching !important + higher specificity)
+   fixes every one of those ~90 views at once, without editing each view. */
+[data-theme="dark"] .bg-white {
+    background-color: var(--card-bg) !important;
+    color: var(--text-body);
+}
+
+[data-theme="dark"] .border {
+    border-color: var(--card-border) !important;
+}
+
+/* App shell is locked to exactly the viewport height and never scrolls itself - only
+   two regions inside it scroll independently: the sidebar's nav list (.app-nav) and the
+   main content pane (.app-content). The topbar and sidebar brand/header stay pinned in
+   place the whole time. `min-height:0` on the two scrolling flex children is required -
+   without it a flex item's default `min-height:auto` refuses to shrink below its content
+   size, which silently defeats `overflow-y:auto` and lets the item (and the whole shell)
+   grow past 100vh instead of scrolling internally (the same flexbox gotcha hit earlier
+   on the login page). */
+.app-shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-sidebar {
+    width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    color: var(--sidebar-fg);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    transition: width .2s ease;
+    overflow: hidden;
+}
+
+/* Collapses to an icon-only rail rather than sliding fully off-screen, so navigation
+   stays one click away instead of disappearing entirely (Section 3 "collapsible sidebar"). */
+.app-shell.sidebar-collapsed .app-sidebar {
+    width: var(--sidebar-width-collapsed);
+}
+
+.app-shell.sidebar-collapsed .nav-text,
+.app-shell.sidebar-collapsed .brand-text,
+.app-shell.sidebar-collapsed .app-nav-heading .nav-text {
+    display: none;
+}
+
+.app-shell.sidebar-collapsed .app-nav-heading {
+    text-align: center;
+    padding: 14px 4px 4px;
+}
+
+.app-shell.sidebar-collapsed .app-nav-link {
+    text-align: center;
+    padding: 10px 4px;
+}
+
+.app-sidebar-brand {
+    flex-shrink: 0;
+    padding: 16px;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+/* Uploaded logo (Admin > System Settings > Branding & Theme). Falls back to the
+   plain emoji brand-icon when no logo has been uploaded - see _Layout.cshtml. */
+.brand-logo {
+    height: 28px;
+    width: auto;
+    max-width: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.app-shell.sidebar-collapsed .brand-logo { margin: 0 auto; }
+
+/* Logo + Banner header (Admin > System Settings > Branding & Theme), shown at the top
+   of the Dashboard only when at least one of the two is configured - never a placeholder.
+   The banner is a slim strip (not a hero image - an earlier 220px version dominated the
+   page above the actual Dashboard content), either an uploaded image or a plain color
+   fill, with an optional caption. The logo sits INSIDE the banner as a round badge,
+   grouped with the caption text by a flex gap rather than a separate box beside the
+   banner or an absolute-positioned overlay - so the two can never overlap regardless of
+   caption length, and the pairing reads as one deliberate, modern lockup rather than two
+   unrelated elements sharing a strip. */
+.dashboard-banner-box {
+    min-height: 110px;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 14px 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-banner-box.is-image {
+    background-size: cover;
+    background-position: center;
+}
+
+/* Where the logo+caption group sits within the banner (Admin > System Settings >
+   Branding & Theme > "Logo & Banner Text Position") - middle is the default/original
+   layout above; left/right just move the group to that edge instead of re-centering it. */
+.dashboard-banner-box.align-left {
+    justify-content: flex-start;
+}
+
+.dashboard-banner-box.align-right {
+    justify-content: flex-end;
+}
+
+.dashboard-banner-box.is-plain {
+    background: var(--card-bg);
+}
+
+/* A dark scrim behind the logo/caption only when there IS content over an image - keeps
+   both legible regardless of what the uploaded photo looks like, without dimming the
+   banner when it's shown on its own with nothing over it. */
+.dashboard-banner-box.is-image.has-text::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .35);
+}
+
+.dashboard-banner-logo-badge {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid rgba(255, 255, 255, .9);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .3);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-banner-logo-badge img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.dashboard-banner-text {
+    position: relative;
+    z-index: 1;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.25rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+    text-align: center;
+}
+
+/* A plain (no image/color) banner exists only to give a lone logo somewhere to sit -
+   its caption, if any, should read as normal body text rather than white-on-nothing. */
+.dashboard-banner-box.is-plain .dashboard-banner-text {
+    color: var(--text-body);
+    text-shadow: none;
+}
+
+@media (max-width: 576px) {
+    .dashboard-banner-box { flex-direction: column; padding: 16px; text-align: center; }
+}
+
+/* The Side Panel's own scroll region: grows to fill whatever vertical space is left
+   below the fixed brand header, then scrolls internally once its nav groups exceed
+   that height - the sidebar frame itself (and the rest of the app shell) never moves. */
+.app-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 8px 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Sidebar sections behave like a simple treeview: each heading is a "parent" node,
+   the links right after it are its "children" - collapsed by default, toggled by
+   clicking (or Enter/Space on) the heading (see _Layout.cshtml's inline script).
+   Sized and weighted well above the plain nav links so the parent reads clearly as
+   a section header once its children are hidden. */
+.app-nav-heading {
+    text-transform: uppercase;
+    font-size: .92rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: #dce6f1;
+    padding: 14px 16px 8px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+
+.app-nav-heading:hover,
+.app-nav-heading:focus-visible {
+    color: #fff;
+    outline: none;
+}
+
+.app-nav-heading .nav-caret {
+    margin-left: auto;
+    transition: transform .15s ease;
+    font-size: .8rem;
+}
+
+.app-nav-heading.collapsed .nav-caret {
+    transform: rotate(-90deg);
+}
+
+.app-nav-group {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.app-nav-group.collapsed { display: none; }
+
+.app-shell.sidebar-collapsed .app-nav-heading .nav-caret { display: none; }
+
+/* Each Side Panel link is its own navy "button" chip - not just plain text sitting on
+   the sidebar's own dark backdrop - so it reads as a real button consistent with the
+   rest of the app (Section: global button color, extended to the Side Panel). */
+.app-nav-link {
+    color: #fff;
+    text-decoration: none;
+    background: var(--navy);
+    margin: 3px 10px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-size: .92rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.app-nav-link:hover,
+.app-nav-link:focus-visible {
+    background: var(--navy-hover);
+    color: #fff;
+    outline: none;
+}
+
+.app-nav-link.active {
+    background: var(--sidebar-accent);
+    color: #fff;
+    font-weight: 600;
+}
+
+.app-shell.sidebar-collapsed .app-nav-link {
+    margin: 3px 6px;
+}
+
+.nav-icon { flex-shrink: 0; width: 1.1em; text-align: center; }
+
+.app-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.app-topbar {
+    flex-shrink: 0;
+    height: var(--topbar-height);
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+}
+
+.app-sidebar-toggle {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.topbar-search {
+    margin-left: 12px;
+    width: 100%;
+    max-width: 340px;
+}
+
+/* Mobile-only search icon (Section: mobile design pass) - the search form itself is
+   hidden below md (see the max-width:768px rule further down), but rather than removing
+   search entirely on a phone, this icon toggles it into view as a full-width overlay
+   dropped just under the topbar, same pattern as most mobile apps collapse a header
+   search bar. */
+.topbar-mobile-search-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 6px 10px;
+    margin-left: 8px;
+    cursor: pointer;
+    color: var(--text-body);
+}
+
+@media (max-width: 767.98px) {
+    .app-topbar { position: relative; }
+    .app-topbar.mobile-search-open .topbar-search {
+        display: flex !important;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-width: none;
+        margin: 0;
+        padding: 10px 16px;
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--card-border);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, .08);
+        z-index: 20;
+    }
+}
+
+.topbar-clock {
+    white-space: nowrap;
+}
+
+.user-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--sidebar-accent);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .85rem;
+    flex-shrink: 0;
+}
+
+.notif-panel {
+    width: 320px;
+    max-width: 90vw;
+    padding: 0;
+}
+
+.notif-list {
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+/* Recent Activity / Alerts feeds on the Dashboard - capped and internally scrollable
+   (same idea as .notif-list above) so a busy day's worth of entries doesn't stretch
+   the card, or the page, taller than it needs to be. */
+.dashboard-feed-body {
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+/* The content pane is the second (and only other) independently-scrolling region -
+   everything a page renders (tables, forms, the Dashboard, etc.) scrolls in here without
+   ever moving the topbar or sidebar out of view. This is what "Main Form = fixed" means
+   in practice for a web app: the outer chrome is pinned, page content scrolls in its own
+   box instead of the whole document scrolling as one long page. */
+.app-content {
+    padding: 20px;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Dashboard cards */
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    padding: 16px;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow .15s ease, transform .15s ease;
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    transform: translateY(-1px);
+}
+
+.stat-card .stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.stat-card .stat-label {
+    color: var(--text-muted);
+    font-size: .85rem;
+}
+
+/* --- Dashboard (Section 11) --- */
+
+/* Quick Actions buttons (Reservation Overview moved to its own notification-icon row,
+   see .reservation-notif-* below, and no longer uses this class): NOT a Bootstrap
+   `.btn-*`/`.btn-outline-*` class any more - deliberately carries no `.btn` class at all,
+   so it is completely untouched by both the global navy button-color override AND the
+   Theme Color feature (Admin > System Settings > Branding & Theme), which both only ever
+   target `.btn-*` selectors. Styled instead as a plain, theme-surface-neutral pill
+   (`--card-bg`/`--card-border`/`--text-body` - these still respond to Light/Dark, just
+   never to the accent Theme Color) with no filled background of its own. The panel
+   itself spans the full page width, but each button wraps in a row at its own content
+   width rather than stretching edge to edge. */
+.dash-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 128px;
+    padding: 6px 14px;
+    font-size: .82rem;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 999px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-body);
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.dash-action-btn:hover {
+    border-color: var(--text-muted);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+    color: var(--text-body);
+}
+
+/* Each Quick Actions icon is a plain glyph with NO fill/background color of its own (no
+   colored badge behind it) - it is never touched by the Theme Color feature (Admin >
+   System Settings > Branding & Theme), since it carries no theme-linked class or color
+   at all. Sized up from the original .95rem so the icon reads clearly at a glance. */
+.qa-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.qa-label {
+    flex: 0 1 auto;
+}
+
+/* Reservation Overview: a row of small notification-style icons above the banner,
+   deliberately NOT styled as buttons - a circular glyph (same visual language as the
+   topbar's notification bell) with a status-colored count badge in the corner, and a
+   tiny label underneath. Still a clickable <a> (navigates to the filtered Reservations
+   list), just without the filled/outlined button look. */
+.reservation-notif-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 20px;
+}
+
+.reservation-notif-bar-label {
+    font-weight: 600;
+    color: var(--text-body);
+}
+
+.reservation-notif-icon {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 60px;
+    text-decoration: none;
+    color: var(--text-muted);
+}
+
+.reservation-notif-glyph {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.reservation-notif-icon:hover .reservation-notif-glyph {
+    border-color: var(--navy);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+
+.reservation-notif-label {
+    font-size: .68rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    color: var(--text-muted);
+}
+
+.kpi-card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+    transition: box-shadow .15s ease, transform .15s ease;
+}
+
+a.kpi-card:hover, a.kpi-card:focus-visible {
+    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+/* Room Status/Guest Status/Financial (Today) KPI cards: each carries its own unique
+   identity color, passed inline in the view as an R,G,B triplet custom property (e.g.
+   style="--kpi-rgb:22,163,74") rather than a single hex, specifically so a reliable
+   plain rgba() tint can be built from it. REVISED (design pass): an earlier version
+   filled the whole card solid with that color, and a color-mix()-based light-tint
+   attempt after that rendered inconsistently (came out just as saturated as the solid
+   version in testing) - 14 fully-saturated tiles in a row read as busy/"toy dashboard"
+   rather than professional, especially next to the rest of the app's clean white-card-
+   plus-accent look (Rooms/Index, System Settings, etc. never fill an entire card with
+   color). Restyled as a genuine soft tint using plain, well-supported rgba(): a light
+   10% wash of the identity color as the card background, a solid-color left accent bar,
+   and a solid-color icon chip - the identity color stays immediately readable at a
+   glance without overwhelming the page. */
+.kpi-card.kpi-filled {
+    background: rgba(var(--kpi-rgb), .1);
+    border-color: transparent;
+    border-left: 4px solid rgb(var(--kpi-rgb));
+    color: var(--text-body);
+}
+
+.kpi-card.kpi-filled .kpi-icon {
+    background: rgb(var(--kpi-rgb));
+    color: #fff;
+}
+
+.kpi-card.kpi-filled .kpi-value {
+    color: var(--text-body);
+}
+
+.kpi-card.kpi-filled .kpi-label {
+    color: var(--text-muted);
+}
+
+.kpi-card.kpi-filled:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .1);
+}
+
+.kpi-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    background: #eef2ff;
+    color: var(--sidebar-accent);
+}
+
+.kpi-icon.tone-success { background: #e6f7ef; color: var(--success); }
+.kpi-icon.tone-warning { background: #fef3e2; color: var(--warning); }
+.kpi-icon.tone-danger  { background: #fde8ea; color: var(--danger); }
+
+.kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.kpi-label {
+    color: var(--text-muted);
+    font-size: .82rem;
+}
+
+.kpi-sub {
+    font-size: .74rem;
+    color: var(--text-faint);
+}
+
+.section-card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    height: 100%;
+}
+
+.section-card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--divider);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: .95rem;
+}
+
+.section-card-body {
+    padding: 14px 16px;
+}
+
+.section-card .table-responsive {
+    max-height: 320px;
+}
+
+/* Room status mini-grid (rooms needing attention only - the full board lives at
+   Rooms/StatusBoard, this is not a duplicate of it). */
+.room-chip {
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    background: var(--card-bg);
+    font-size: .78rem;
+}
+
+.room-chip .room-chip-num { font-weight: 700; font-size: .9rem; }
+
+/* Occupancy ring - a plain SVG stroke-dasharray progress ring, no chart library. */
+.occupancy-ring-wrap {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Simple inline bar chart for the Income vs Expense trend. */
+.trend-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 160px;
+    padding-top: 8px;
+}
+
+/* Paired side-by-side with Amenities on the Dashboard - kept short so this chart is a
+   quick glance, not a section that dominates the page. */
+.trend-chart-compact {
+    height: 90px;
+}
+
+.trend-chart-compact .trend-bucket-label {
+    font-size: .62rem;
+}
+
+.trend-bucket {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 2px;
+}
+
+.trend-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+}
+
+.trend-bar {
+    width: 40%;
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+}
+
+.trend-bar.income { background: var(--success); }
+.trend-bar.expense { background: var(--danger); }
+
+.trend-bucket-label {
+    font-size: .68rem;
+    color: var(--text-faint);
+    margin-top: 4px;
+    white-space: nowrap;
+}
+
+/* Alerts */
+.alert-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--divider);
+    text-decoration: none;
+    color: inherit;
+}
+
+.alert-list-item:last-child { border-bottom: none; }
+
+.alert-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+
+.alert-dot.info { background: var(--info); }
+.alert-dot.success { background: var(--success); }
+.alert-dot.warning { background: var(--warning); }
+.alert-dot.critical { background: var(--danger); }
+
+.empty-state {
+    color: var(--text-faint);
+    font-size: .88rem;
+    text-align: center;
+    padding: 24px 8px;
+}
+
+/* Responsive: stack KPI/section grids and keep tables scrollable, never overflowing the
+   viewport (Section 13). */
+@media (max-width: 992px) {
+    .occupancy-ring-wrap { flex-direction: column; text-align: center; }
+}
+
+/* Hidden on desktop at all times; only ever shown by the mobile rule below. A tap
+   anywhere on it collapses the sidebar (see _Layout.cshtml), the same as tapping
+   outside an off-canvas menu on any phone app. */
+.mobile-sidebar-backdrop { display: none; }
+
+@media (max-width: 768px) {
+    .app-sidebar { position: fixed; z-index: 1030; height: 100vh; }
+    .app-shell:not(.sidebar-collapsed) .app-sidebar { width: var(--sidebar-width); }
+    .app-shell.sidebar-collapsed .app-sidebar { width: 0; }
+    .topbar-search { display: none !important; }
+
+    /* The sidebar defaults to collapsed on a phone-width load (see the inline script
+       right before .app-sidebar in _Layout.cshtml) so content is visible immediately
+       rather than hidden behind a full-width sidebar on every single page load. */
+    .app-shell:not(.sidebar-collapsed) .mobile-sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .45);
+        z-index: 1020;
+    }
+
+    .app-content { padding: 14px; }
+}
+
+/* ================= Split-screen Login ================= *
+ * Two-panel card: a blue-gradient "welcome" branding panel (left) and a plain
+ * white form panel (right), collapsing to a single stacked column on narrow
+ * screens. All decorative elements (glow orbs, diagonal streaks, grid) are
+ * plain CSS gradients - no images/JS libraries. */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(59,130,246,.25), transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(34,211,238,.18), transparent 45%),
+        linear-gradient(135deg, #0b1330 0%, #101d4a 55%, #0b1330 100%);
+}
+
+.login-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+}
+
+.login-card {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    width: 100%;
+    max-width: 920px;
+    min-height: 560px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,.45);
+}
+
+.login-brand-panel {
+    flex: 0 0 46%;
+    position: relative;
+    padding: 36px 34px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #fff;
+    background: linear-gradient(160deg, #0e2a78 0%, #1750c9 55%, #16b8d6 130%);
+    overflow: hidden;
+}
+
+.login-brand-panel::before,
+.login-brand-panel::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.login-brand-panel::before {
+    width: 260px;
+    height: 260px;
+    top: -80px;
+    right: -80px;
+    background: radial-gradient(circle, rgba(255,255,255,.22), transparent 70%);
+}
+
+.login-brand-panel::after {
+    width: 320px;
+    height: 320px;
+    bottom: -120px;
+    left: -100px;
+    background: radial-gradient(circle, rgba(255,255,255,.14), transparent 70%);
+}
+
+.login-brand-lines {
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0px, rgba(255,255,255,.06) 2px, transparent 2px, transparent 34px);
+    pointer-events: none;
+}
+
+.login-brand-top {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.login-brand-logo-img { height: 34px; width: auto; max-width: 140px; object-fit: contain; }
+.login-brand-logo-icon { font-size: 1.6rem; }
+.login-brand-name { font-weight: 700; font-size: 1rem; letter-spacing: .02em; }
+
+.login-brand-mid { position: relative; z-index: 1; }
+.login-brand-mid h1 { font-size: 2.1rem; font-weight: 800; margin: 0 0 12px; line-height: 1.15; }
+.login-brand-mid p { font-size: .92rem; color: rgba(255,255,255,.85); max-width: 320px; margin: 0 0 22px; line-height: 1.5; }
+
+.login-view-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 22px;
+    border: 1.5px solid rgba(255,255,255,.7);
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 600;
+    font-size: .85rem;
+    background: transparent;
+    text-decoration: none;
+    transition: background .15s ease, transform .15s ease;
+}
+
+.login-view-more:hover { background: rgba(255,255,255,.15); color: #fff; transform: translateY(-1px); }
+
+.login-brand-foot { position: relative; z-index: 1; font-size: .72rem; color: rgba(255,255,255,.6); }
+
+.login-form-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 36px;
+    background: #fff;
+    min-width: 0;
+}
+
+.login-form-inner { width: 100%; max-width: 340px; }
+.login-form-inner h2 { font-weight: 700; font-size: 1.5rem; margin-bottom: 4px; color: #111827; }
+.login-form-inner .login-subtitle { color: #6b7280; font-size: .88rem; margin-bottom: 22px; }
+
+.login-field { margin-bottom: 16px; }
+.login-field label { display: block; font-size: .82rem; font-weight: 600; color: #374151; margin-bottom: 6px; }
+
+.login-input-wrap { position: relative; }
+
+.login-input-wrap .login-input-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    font-size: .95rem;
+}
+
+.login-input-wrap input.form-control {
+    padding: 11px 40px 11px 40px;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    background: #f9fafb;
+    color: #111827;
+    font-size: .92rem;
+    height: auto;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.login-input-wrap input.form-control:focus {
+    border-color: #2563eb;
+    background: #fff;
+    box-shadow: 0 0 0 .18rem rgba(37,99,235,.15);
+    outline: none;
+}
+
+.login-input-wrap input.form-control.input-validation-error {
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+
+.login-input-wrap input.form-control:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+}
+
+.login-toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.login-toggle-password:hover, .login-toggle-password:focus-visible { color: #374151; outline: none; }
+
+.login-options { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 20px; font-size: .85rem; }
+.login-options .form-check-label { color: #4b5563; }
+.login-forgot-note { color: #2563eb; font-weight: 600; }
+
+.login-btn {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 700;
+    font-size: .98rem;
+    color: #fff;
+    background: linear-gradient(90deg, #1d4ed8, #2563eb, #0ea5e9);
+    background-size: 160% 100%;
+    background-position: 0% 0%;
+    box-shadow: 0 10px 24px rgba(37,99,235,.35);
+    cursor: pointer;
+    transition: background-position .25s ease, box-shadow .2s ease, transform .1s ease;
+}
+
+.login-btn:hover:not(:disabled) { background-position: 100% 0%; box-shadow: 0 12px 28px rgba(37,99,235,.45); }
+.login-btn:active:not(:disabled) { transform: translateY(1px); }
+.login-btn:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.login-btn:disabled { opacity: .7; cursor: not-allowed; box-shadow: none; }
+
+.login-signup-note { text-align: center; margin-top: 20px; font-size: .85rem; color: #6b7280; }
+
+.login-signup-btn {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #1d4ed8, #2563eb);
+    color: #fff;
+    font-weight: 600;
+    font-size: .82rem;
+    text-decoration: none;
+}
+
+.login-signup-btn:hover { color: #fff; opacity: .92; }
+
+@media (max-width: 820px) {
+    .login-card { flex-direction: column; max-width: 440px; min-height: 0; }
+    .login-brand-panel { flex: none; padding: 26px 28px; }
+    .login-brand-mid h1 { font-size: 1.5rem; }
+    .login-brand-mid p { display: none; }
+    .login-view-more { display: none; }
+    .login-form-panel { padding: 32px 26px; }
+}
+
+@media (max-width: 420px) {
+    .login-page { padding: 16px 10px; }
+    .login-card { border-radius: 16px; }
+    .login-brand-panel { padding: 20px 20px; }
+    .login-brand-mid h1 { font-size: 1.3rem; }
+    .login-form-panel { padding: 26px 18px; }
+}

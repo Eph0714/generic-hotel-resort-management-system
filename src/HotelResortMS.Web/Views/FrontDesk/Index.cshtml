@@ -1,0 +1,49 @@
+@model List<HotelResortMS.Core.Entities.Reservation>
+@{
+    ViewData["Title"] = "Front Desk";
+    var inHouse = ViewBag.InHouse as List<HotelResortMS.Core.Entities.Reservation> ?? new();
+}
+<h3 class="mb-3">Front Desk</h3>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+
+<h5>Today's Arrivals</h5>
+<div class="table-responsive mb-4">
+<table class="table table-sm bg-white">
+    <thead><tr><th>Reservation #</th><th>Guest</th><th>Check-In</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr>
+            <td>@r.ReservationNumber</td>
+            <td>@r.Guest?.FirstName @r.Guest?.LastName</td>
+            <td>@r.CheckInDate.ToString("yyyy-MM-dd")</td>
+            <td class="text-end">
+                <form asp-action="CheckIn" asp-route-id="@r.Id" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-success">Check In</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>
+
+<h5>In-House Guests</h5>
+<div class="table-responsive">
+<table class="table table-sm bg-white">
+    <thead><tr><th>Reservation #</th><th>Guest</th><th>Check-Out</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    @foreach (var r in inHouse)
+    {
+        <tr>
+            <td>@r.ReservationNumber</td>
+            <td>@r.Guest?.FirstName @r.Guest?.LastName</td>
+            <td>@r.CheckOutDate.ToString("yyyy-MM-dd")</td>
+            <td class="text-end"><a asp-action="Folio" asp-route-reservationId="@r.Id" class="btn btn-sm btn-outline-primary">Folio</a></td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

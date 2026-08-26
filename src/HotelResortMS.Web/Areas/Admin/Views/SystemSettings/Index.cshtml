@@ -1,0 +1,231 @@
+@model List<IGrouping<string, HotelResortMS.Core.Entities.SystemSetting>>
+@{
+    ViewData["Title"] = "System Settings";
+    var supportedThemes = (string[])ViewBag.SupportedThemes;
+    var supportedBannerModes = (string[])ViewBag.SupportedBannerModes;
+    var supportedBannerAlignments = (string[])ViewBag.SupportedBannerAlignments;
+}
+<h3 class="mb-3">System Settings</h3>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert alert-success">@success</div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+@foreach (var group in Model)
+{
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">@group.Key</div>
+        <div class="card-body">
+            @foreach (var setting in group)
+            {
+                @if (setting.Key == "Hotel.LogoPath")
+                {
+                    <div class="row g-2 align-items-center mb-3 pb-3 border-bottom">
+                        <div class="col-sm-4">
+                            <div class="fw-medium">Logo</div>
+                            <div class="text-muted small">Shown in the sidebar, and beside the Dashboard banner. PNG/JPG/WEBP/SVG, max 2 MB.</div>
+                        </div>
+                        <div class="col-sm-3">
+                            @if (!string.IsNullOrWhiteSpace(setting.Value))
+                            {
+                                <img src="@setting.Value" alt="Current logo" style="max-height:48px;max-width:100%;border-radius:4px;" />
+                            }
+                            else
+                            {
+                                <span class="text-muted small">No logo uploaded.</span>
+                            }
+                        </div>
+                        <div class="col-sm-5">
+                            <form asp-action="UploadLogo" method="post" enctype="multipart/form-data" class="d-flex gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="file" name="file" accept=".png,.jpg,.jpeg,.webp,.svg" class="form-control form-control-sm" aria-label="Choose logo file" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload</button>
+                            </form>
+                            @if (!string.IsNullOrWhiteSpace(setting.Value))
+                            {
+                                <form asp-action="RemoveLogo" method="post" class="mt-1">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove logo</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (setting.Key == "Hotel.BannerMode")
+                {
+                    <form asp-action="Update" method="post" class="row g-2 align-items-center mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@setting.Id" />
+                        <div class="col-sm-4">
+                            <div class="fw-medium">Banner Display</div>
+                            <div class="text-muted small">@setting.Description</div>
+                        </div>
+                        <div class="col-sm-5">
+                            <select name="value" class="form-select form-select-sm">
+                                @foreach (var mode in supportedBannerModes)
+                                {
+                                    <option value="@mode" selected="@(mode == setting.Value)">@(mode == "Image" ? "Uploaded Image" : "Solid Color")</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-sm-3">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </div>
+                    </form>
+                }
+                else if (setting.Key == "Hotel.BannerColor")
+                {
+                    <form asp-action="Update" method="post" class="row g-2 align-items-center mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@setting.Id" />
+                        <div class="col-sm-4">
+                            <div class="fw-medium">Banner Color</div>
+                            <div class="text-muted small">@setting.Description</div>
+                        </div>
+                        <div class="col-sm-5 d-flex align-items-center gap-2">
+                            <input type="color" name="value" value="@(setting.Value ?? "#2f6fed")" class="form-control form-control-sm form-control-color" title="Choose banner color" />
+                        </div>
+                        <div class="col-sm-3">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </div>
+                    </form>
+                }
+                else if (setting.Key == "Hotel.BannerText")
+                {
+                    <form asp-action="Update" method="post" class="row g-2 align-items-center mb-3 pb-3 border-bottom">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@setting.Id" />
+                        <div class="col-sm-4">
+                            <div class="fw-medium">Banner Text</div>
+                            <div class="text-muted small">@setting.Description</div>
+                        </div>
+                        <div class="col-sm-5">
+                            <input type="text" name="value" value="@setting.Value" maxlength="80" placeholder="e.g. Welcome to Sample Hotel and Resort" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-sm-3">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </div>
+                    </form>
+                }
+                else if (setting.Key == "Hotel.BannerAlignment")
+                {
+                    <form asp-action="Update" method="post" class="row g-2 align-items-center mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@setting.Id" />
+                        <div class="col-sm-4">
+                            <div class="fw-medium">Logo &amp; Banner Text Position</div>
+                            <div class="text-muted small">@setting.Description</div>
+                        </div>
+                        <div class="col-sm-5">
+                            <select name="value" class="form-select form-select-sm">
+                                @foreach (var alignment in supportedBannerAlignments)
+                                {
+                                    <option value="@alignment" selected="@(alignment == setting.Value)">@(alignment == "Middle" ? "Middle" : $"{alignment} Side")</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-sm-3">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </div>
+                    </form>
+                }
+                else if (setting.Key == "Hotel.BannerPath")
+                {
+                    <div class="row g-2 align-items-center mb-3 pb-3 border-bottom">
+                        <div class="col-sm-4">
+                            <div class="fw-medium">Banner Image</div>
+                            <div class="text-muted small">Only used when Banner Display above is "Uploaded Image". PNG/JPG/WEBP, max 5 MB.</div>
+                        </div>
+                        <div class="col-sm-3">
+                            @if (!string.IsNullOrWhiteSpace(setting.Value))
+                            {
+                                <img src="@setting.Value" alt="Current banner" style="max-height:48px;max-width:100%;border-radius:4px;" />
+                            }
+                            else
+                            {
+                                <span class="text-muted small">No banner uploaded.</span>
+                            }
+                        </div>
+                        <div class="col-sm-5">
+                            <form asp-action="UploadBanner" method="post" enctype="multipart/form-data" class="d-flex gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="file" name="file" accept=".png,.jpg,.jpeg,.webp" class="form-control form-control-sm" aria-label="Choose banner file" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Upload</button>
+                            </form>
+                            @if (!string.IsNullOrWhiteSpace(setting.Value))
+                            {
+                                <form asp-action="RemoveBanner" method="post" class="mt-1">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove banner</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (setting.Key == "App.Theme")
+                {
+                    <form asp-action="Update" method="post" class="row g-2 align-items-center mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@setting.Id" />
+                        <div class="col-sm-4">
+                            <div class="fw-medium">@setting.Key</div>
+                            <div class="text-muted small">@setting.Description</div>
+                        </div>
+                        <div class="col-sm-5">
+                            <select name="value" class="form-select form-select-sm">
+                                @foreach (var theme in supportedThemes)
+                                {
+                                    <option value="@theme" selected="@(theme == setting.Value)">@theme</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-sm-3">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </div>
+                    </form>
+                }
+                else if (setting.Key == "App.ThemeColor")
+                {
+                    @* Same picker pattern as Banner Color below - a native color input,
+                       not a fixed named-palette dropdown, so any color can be chosen. *@
+                    <form asp-action="Update" method="post" class="row g-2 align-items-center mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@setting.Id" />
+                        <div class="col-sm-4">
+                            <div class="fw-medium">Theme Color</div>
+                            <div class="text-muted small">@setting.Description</div>
+                        </div>
+                        <div class="col-sm-5 d-flex align-items-center gap-2">
+                            <input type="color" name="value" value="@HotelResortMS.Core.Interfaces.SupportedThemeColors.ResolveHex(setting.Value)" class="form-control form-control-sm form-control-color" title="Choose theme color" />
+                        </div>
+                        <div class="col-sm-3">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <form asp-action="Update" method="post" class="row g-2 align-items-center mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@setting.Id" />
+                        <div class="col-sm-4">
+                            <div class="fw-medium">@setting.Key</div>
+                            <div class="text-muted small">@setting.Description</div>
+                        </div>
+                        <div class="col-sm-5">
+                            <input type="text" name="value" value="@setting.Value" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-sm-3">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                        </div>
+                    </form>
+                }
+            }
+        </div>
+    </div>
+}

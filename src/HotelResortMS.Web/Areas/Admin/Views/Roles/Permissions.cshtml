@@ -1,0 +1,73 @@
+@model HotelResortMS.Web.Areas.Admin.Models.RolePermissionMatrixViewModel
+@{
+    ViewData["Title"] = "Permissions - " + Model.RoleName;
+    var actions = new[] { "View", "Add", "Edit", "Delete", "Approve", "Void", "Refund", "Print", "Export", "Configure" };
+}
+<h3 class="mb-1">Permissions</h3>
+<p class="text-muted mb-3">Role: <strong>@Model.RoleName</strong></p>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert alert-success">@success</div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+@if (Model.RoleName == "Super Admin")
+{
+    <div class="alert alert-info">Super Admin always has full access to every module and cannot be edited here.</div>
+}
+
+<form asp-action="Permissions" asp-route-id="@Model.RoleId" method="post">
+    @Html.AntiForgeryToken()
+    <div class="table-responsive bg-white border rounded">
+        <table class="table table-sm table-bordered mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Module</th>
+                    @foreach (var action in actions)
+                    {
+                        <th class="text-center">@action</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var (module, flags) in Model.Modules)
+            {
+                <tr>
+                    <td>@module</td>
+                    @foreach (var action in actions)
+                    {
+                        var isChecked = action switch
+                        {
+                            "View" => flags.CanView,
+                            "Add" => flags.CanAdd,
+                            "Edit" => flags.CanEdit,
+                            "Delete" => flags.CanDelete,
+                            "Approve" => flags.CanApprove,
+                            "Void" => flags.CanVoid,
+                            "Refund" => flags.CanRefund,
+                            "Print" => flags.CanPrint,
+                            "Export" => flags.CanExport,
+                            "Configure" => flags.CanConfigure,
+                            _ => false
+                        };
+                        <td class="text-center">
+                            <input type="checkbox" name="module[@module]" value="@action" checked="@isChecked"
+                                   disabled="@(Model.RoleName == "Super Admin")" />
+                        </td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.RoleName != "Super Admin")
+    {
+        <button type="submit" class="btn btn-primary mt-3">Save Permissions</button>
+    }
+    <a asp-action="Index" class="btn btn-outline-secondary mt-3">Back</a>
+</form>

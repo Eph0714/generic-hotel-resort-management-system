@@ -1,0 +1,66 @@
+@model HotelResortMS.Web.Models.Reports.FinancialReportViewModel
+@{
+    ViewData["Title"] = "Financial Reports";
+}
+<h3 class="mb-3">Financial Reports</h3>
+@await Html.PartialAsync("_FilterBar", Model.Range)
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Revenue &amp; Profit/Loss</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td>Gross Revenue</td><td class="text-end">@Model.GrossRevenue.ToString("N2")</td></tr>
+                    <tr><td>Discounts</td><td class="text-end">-@Model.Discounts.ToString("N2")</td></tr>
+                    <tr class="fw-semibold"><td>Net Revenue</td><td class="text-end">@Model.NetRevenue.ToString("N2")</td></tr>
+                    <tr><td>Total Income</td><td class="text-end">@Model.TotalIncome.ToString("N2")</td></tr>
+                    <tr><td>Total Expenses</td><td class="text-end">-@Model.TotalExpenses.ToString("N2")</td></tr>
+                    <tr class="fw-bold border-top"><td>Profit / Loss</td><td class="text-end">@Model.ProfitLoss.ToString("N2")</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Cash Flow &amp; Balances</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td>Beginning Cash</td><td class="text-end">@Model.BeginningCash.ToString("N2")</td></tr>
+                    <tr><td>Cash Receipts</td><td class="text-end">@Model.CashReceipts.ToString("N2")</td></tr>
+                    <tr><td>Cash Paid Out</td><td class="text-end">-@Model.CashPaidOut.ToString("N2")</td></tr>
+                    <tr class="fw-semibold"><td>Net Cash Flow</td><td class="text-end">@Model.NetCashFlow.ToString("N2")</td></tr>
+                    <tr><td>Ending Cash</td><td class="text-end">@(Model.EndingCash?.ToString("N2") ?? "(not closed)")</td></tr>
+                    <tr><td>Cash Variance</td><td class="text-end">@(Model.CashVariance?.ToString("N2") ?? "-")</td></tr>
+                    <tr class="border-top"><td>Accounts Receivable Outstanding</td><td class="text-end">@Model.AccountsReceivableOutstanding.ToString("N2")</td></tr>
+                    <tr><td>Accounts Payable Outstanding</td><td class="text-end">@Model.AccountsPayableOutstanding.ToString("N2")</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card"><div class="card-header">Income by Category</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <tbody>
+            @foreach (var g in Model.IncomeByCategory.GroupBy(i => i.Category))
+            {
+                <tr><td>@g.Key</td><td class="text-end">@g.Sum(i => i.NetAmount).ToString("N2")</td></tr>
+            }
+            </tbody>
+        </table></div></div>
+    </div>
+    <div class="col-md-6">
+        <div class="card"><div class="card-header">Expenses by Category</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <tbody>
+            @foreach (var g in Model.ExpensesByCategory.GroupBy(x => x.Category))
+            {
+                <tr><td>@g.Key</td><td class="text-end">@g.Sum(x => x.Amount).ToString("N2")</td></tr>
+            }
+            </tbody>
+        </table></div></div>
+    </div>
+</div>

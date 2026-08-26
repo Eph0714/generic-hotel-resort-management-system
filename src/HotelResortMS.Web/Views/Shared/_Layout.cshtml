@@ -1,0 +1,376 @@
+@using System.Linq
+@inject HotelResortMS.Core.Interfaces.IHotelBrandingService HotelBranding
+@{
+    var branding = await HotelBranding.GetBrandingAsync();
+    var hotelName = branding.Name;
+
+    // Section 51: highlights the sidebar link for whatever controller/area is currently
+    // rendering, so staff always have a clear "you are here" - computed once here rather
+    // than repeated per-link so every link stays a plain one-liner below.
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    // The optional "type" parameter handles the shared multi-type controllers
+    // (Lookups/InventoryLookups/EventLookups render several sidebar links off one
+    // controller, distinguished only by a ?type= query value) - without it, every
+    // link sharing that controller would light up together, or (as actually happened
+    // here) NONE of them would, since these links previously passed no ActiveIf at
+    // all and their whole section would incorrectly collapse on load.
+    string ActiveIf(string controller, string area = "", string? type = null) =>
+        string.Equals(controller, currentController, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(area, currentArea, StringComparison.OrdinalIgnoreCase) &&
+        (type is null || string.Equals(type, Context.Request.Query["type"].ToString(), StringComparison.OrdinalIgnoreCase))
+            ? " active" : "";
+
+    var userRole = User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+        .Select(c => c.Value).FirstOrDefault();
+
+    // Section 3: Alt+<digit> jumps straight to the day-to-day modules staff use most,
+    // without introducing a new client-side routing/shortcut library - plain keydown
+    // handling further down, with the actual target URLs generated server-side here so
+    // they stay correct if routing ever changes. Server-side permission checks on each
+    // controller still apply exactly as if the link had been clicked normally - a
+    // shortcut to a page a user can't access lands on the same 403 the sidebar would.
+    var shortcuts = new (string Key, string? Url, string Label)[]
+    {
+        ("1", Url.Action("Index", "Dashboard"), "Dashboard"),
+        ("2", Url.Action("Index", "Reservations"), "Reservations"),
+        ("3", Url.Action("Index", "FrontDesk"), "Front Desk"),
+        ("4", Url.Action("Index", "Guests"), "Guests"),
+        ("5", Url.Action("Index", "Rooms"), "Rooms"),
+        ("6", Url.Action("Index", "Housekeeping"), "Housekeeping"),
+        ("7", Url.Action("Index", "POS"), "Point of Sale"),
+        ("8", Url.Action("Index", "Reports"), "Reports"),
+    };
+}
+<!DOCTYPE html>
+<html lang="en" data-theme="@branding.Theme.ToLowerInvariant()">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - @hotelName</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    @* Theme Color (Admin > System Settings > Branding & Theme) is now a single free-
+       choice hex color, same picker UX as the Dashboard Banner Color, not a fixed named
+       palette any more. Runs synchronously here in <head> (before the stylesheet even
+       finishes, let alone first paint) so there's no flash of the default navy before
+       the real color applies. Derives hover/active/border/sidebar-accent/sidebar-bg
+       shades from that one base color via simple RGB math - lets a Super Admin pick any
+       color at all instead of choosing from six pre-made palettes. *@
+    <script>
+        (function () {
+            var base = '@branding.ThemeColor';
+            function toRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) { hex = hex.split('').map(function (c) { return c + c; }).join(''); }
+                var num = parseInt(hex, 16);
+                return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+            }
+            function toHex(rgb) {
+                return '#' + rgb.map(function (v) {
+                    return Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+                }).join('');
+            }
+            // pct > 0 lightens toward white, pct < 0 darkens toward black.
+            function shade(hex, pct) {
+                var rgb = toRgb(hex);
+                return toHex(rgb.map(function (v) { return pct >= 0 ? v + (255 - v) * pct : v * (1 + pct); }));
+            }
+            var root = document.documentElement.style;
+            root.setProperty('--navy', base);
+            root.setProperty('--navy-hover', shade(base, -0.15));
+            root.setProperty('--navy-active', shade(base, -0.3));
+            root.setProperty('--navy-border', shade(base, -0.3));
+            root.setProperty('--sidebar-accent', shade(base, 0.3));
+            root.setProperty('--sidebar-bg', shade(base, -0.55));
+        })();
+    </script>
+</head>
+<body>
+    <div class="app-shell">
+        @* Runs synchronously during parsing, before the sidebar paints, so a phone never
+           flashes the full desktop sidebar open before collapsing it - see the mobile
+           responsive notes further down for why this needed to be an inline, blocking
+           script rather than the deferred script block at the bottom of the page. *@
+        <script>document.currentScript.parentElement.classList.toggle('sidebar-collapsed', window.innerWidth <= 768);</script>
+        <div class="mobile-sidebar-backdrop" onclick="document.querySelector('.app-shell').classList.add('sidebar-collapsed')"></div>
+        <aside class="app-sidebar">
+            <div class="app-sidebar-brand">
+                @* Sidebar shows the plain brand icon only - the uploaded logo now appears
+                   solely inside the Dashboard banner (Admin > System Settings > Branding
+                   & Theme), not duplicated here as well. *@
+                <span class="brand-icon" aria-hidden="true">&#127976;</span>
+                <span class="brand-text">@hotelName</span>
+            </div>
+            <nav class="app-nav">
+                <div class="app-nav-group">
+                    <a class="app-nav-link@(ActiveIf("Dashboard"))" asp-area="" asp-controller="Dashboard" asp-action="Index" title="Dashboard">
+                        <span class="nav-icon" aria-hidden="true">&#128202;</span><span class="nav-text">Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="app-nav-heading"><span class="nav-icon" aria-hidden="true">&#127958;&#65039;</span><span class="nav-text">Operations</span><span class="nav-caret" aria-hidden="true">&#9662;</span></div>
+                <div class="app-nav-group">
+                    <a class="app-nav-link@(ActiveIf("Guests"))" asp-area="" asp-controller="Guests" asp-action="Index" title="Guests"><span class="nav-icon">&#128100;</span><span class="nav-text">Guests</span></a>
+                    <a class="app-nav-link@(ActiveIf("Rooms"))" asp-area="" asp-controller="Rooms" asp-action="Index" title="Rooms"><span class="nav-icon">&#128716;</span><span class="nav-text">Rooms</span></a>
+                    <a class="app-nav-link@(ActiveIf("RoomTypes"))" asp-area="" asp-controller="RoomTypes" asp-action="Index" title="Room Types"><span class="nav-icon">&#127959;&#65039;</span><span class="nav-text">Room Types</span></a>
+                    <a class="app-nav-link@(ActiveIf("Lookups", type: "BedType"))" asp-area="" asp-controller="Lookups" asp-action="Index" asp-route-type="BedType" title="Bed Types"><span class="nav-icon">&#128719;</span><span class="nav-text">Bed Types</span></a>
+                    <a class="app-nav-link@(ActiveIf("Lookups", type: "FloorArea"))" asp-area="" asp-controller="Lookups" asp-action="Index" asp-route-type="FloorArea" title="Floors/Areas"><span class="nav-icon">&#127959;</span><span class="nav-text">Floors/Areas</span></a>
+                    <a class="app-nav-link@(ActiveIf("Amenities"))" asp-area="" asp-controller="Amenities" asp-action="Index" title="Amenities"><span class="nav-icon">&#127958;&#65039;</span><span class="nav-text">Amenities</span></a>
+                    <a class="app-nav-link@(ActiveIf("Lookups", type: "AmenityCategory"))" asp-area="" asp-controller="Lookups" asp-action="Index" asp-route-type="AmenityCategory" title="Amenity Categories"><span class="nav-icon">&#128209;</span><span class="nav-text">Amenity Categories</span></a>
+                    <a class="app-nav-link@(ActiveIf("Reservations"))" asp-area="" asp-controller="Reservations" asp-action="Index" title="Reservations"><span class="nav-icon">&#128197;</span><span class="nav-text">Reservations</span></a>
+                    <a class="app-nav-link@(ActiveIf("CancellationPolicies"))" asp-area="" asp-controller="CancellationPolicies" asp-action="Index" title="Cancellation Policies"><span class="nav-icon">&#10060;</span><span class="nav-text">Cancellation Policies</span></a>
+                    <a class="app-nav-link@(ActiveIf("FrontDesk"))" asp-area="" asp-controller="FrontDesk" asp-action="Index" title="Front Desk"><span class="nav-icon">&#128276;</span><span class="nav-text">Front Desk</span></a>
+                    <a class="app-nav-link@(ActiveIf("Housekeeping"))" asp-area="" asp-controller="Housekeeping" asp-action="Index" title="Housekeeping"><span class="nav-icon">&#129529;</span><span class="nav-text">Housekeeping</span></a>
+                    <a class="app-nav-link@(ActiveIf("MaintenanceRequests"))" asp-area="" asp-controller="MaintenanceRequests" asp-action="Index" title="Maintenance"><span class="nav-icon">&#128295;</span><span class="nav-text">Maintenance</span></a>
+                    <a class="app-nav-link@(ActiveIf("MaintenanceCategories"))" asp-area="" asp-controller="MaintenanceCategories" asp-action="Index" title="Maintenance Categories"><span class="nav-icon">&#128209;</span><span class="nav-text">Maintenance Categories</span></a>
+                    <a class="app-nav-link@(ActiveIf("Equipment"))" asp-area="" asp-controller="Equipment" asp-action="Index" title="Equipment"><span class="nav-icon">&#9881;&#65039;</span><span class="nav-text">Equipment</span></a>
+                    <a class="app-nav-link@(ActiveIf("Events"))" asp-area="" asp-controller="Events" asp-action="Index" title="Events"><span class="nav-icon">&#127881;</span><span class="nav-text">Events</span></a>
+                    <a class="app-nav-link@(ActiveIf("EventLookups", type: "EventType"))" asp-area="" asp-controller="EventLookups" asp-action="Index" asp-route-type="EventType" title="Event Types"><span class="nav-icon">&#128209;</span><span class="nav-text">Event Types</span></a>
+                    <a class="app-nav-link@(ActiveIf("EventLookups", type: "EventVenue"))" asp-area="" asp-controller="EventLookups" asp-action="Index" asp-route-type="EventVenue" title="Event Venues"><span class="nav-icon">&#127963;&#65039;</span><span class="nav-text">Event Venues</span></a>
+                    <a class="app-nav-link@(ActiveIf("Packages"))" asp-area="" asp-controller="Packages" asp-action="Index" title="Packages"><span class="nav-icon">&#127873;</span><span class="nav-text">Packages</span></a>
+                </div>
+
+                <div class="app-nav-heading"><span class="nav-icon" aria-hidden="true">&#128176;</span><span class="nav-text">Sales</span><span class="nav-caret" aria-hidden="true">&#9662;</span></div>
+                <div class="app-nav-group">
+                    <a class="app-nav-link@(ActiveIf("POS"))" asp-area="" asp-controller="POS" asp-action="Index" title="Point of Sale"><span class="nav-icon">&#128179;</span><span class="nav-text">Point of Sale</span></a>
+                    <a class="app-nav-link" asp-area="" asp-controller="POS" asp-action="History" title="Sale History"><span class="nav-icon">&#128220;</span><span class="nav-text">Sale History</span></a>
+                    <a class="app-nav-link@(ActiveIf("Products"))" asp-area="" asp-controller="Products" asp-action="Index" title="Products"><span class="nav-icon">&#128230;</span><span class="nav-text">Products</span></a>
+                    <a class="app-nav-link@(ActiveIf("ProductCategories"))" asp-area="" asp-controller="ProductCategories" asp-action="Index" title="Product Categories"><span class="nav-icon">&#128209;</span><span class="nav-text">Product Categories</span></a>
+                    <a class="app-nav-link@(ActiveIf("Payments"))" asp-area="" asp-controller="Payments" asp-action="Index" title="Payments"><span class="nav-icon">&#128180;</span><span class="nav-text">Payments</span></a>
+                    <a class="app-nav-link@(ActiveIf("Discounts"))" asp-area="" asp-controller="Discounts" asp-action="Index" title="Discounts"><span class="nav-icon">&#127991;&#65039;</span><span class="nav-text">Discounts</span></a>
+                </div>
+
+                <div class="app-nav-heading"><span class="nav-icon" aria-hidden="true">&#128230;</span><span class="nav-text">Inventory</span><span class="nav-caret" aria-hidden="true">&#9662;</span></div>
+                <div class="app-nav-group">
+                    <a class="app-nav-link@(ActiveIf("InventoryItems"))" asp-area="" asp-controller="InventoryItems" asp-action="Index" title="Inventory Items"><span class="nav-icon">&#128736;&#65039;</span><span class="nav-text">Inventory Items</span></a>
+                    <a class="app-nav-link@(ActiveIf("InventoryLookups", type: "UnitOfMeasure"))" asp-area="" asp-controller="InventoryLookups" asp-action="Index" asp-route-type="UnitOfMeasure" title="Units of Measure"><span class="nav-icon">&#128209;</span><span class="nav-text">Units of Measure</span></a>
+                    <a class="app-nav-link@(ActiveIf("InventoryLookups", type: "InventoryLocation"))" asp-area="" asp-controller="InventoryLookups" asp-action="Index" asp-route-type="InventoryLocation" title="Locations"><span class="nav-icon">&#128205;</span><span class="nav-text">Locations</span></a>
+                    <a class="app-nav-link@(ActiveIf("Recipes"))" asp-area="" asp-controller="Recipes" asp-action="Index" title="Recipes / BOM"><span class="nav-icon">&#127859;</span><span class="nav-text">Recipes / BOM</span></a>
+                    <a class="app-nav-link@(ActiveIf("Suppliers"))" asp-area="" asp-controller="Suppliers" asp-action="Index" title="Suppliers"><span class="nav-icon">&#128666;</span><span class="nav-text">Suppliers</span></a>
+                    <a class="app-nav-link@(ActiveIf("PurchaseOrders"))" asp-area="" asp-controller="PurchaseOrders" asp-action="Index" title="Purchase Orders"><span class="nav-icon">&#128203;</span><span class="nav-text">Purchase Orders</span></a>
+                    <a class="app-nav-link@(ActiveIf("AccountsPayable"))" asp-area="" asp-controller="AccountsPayable" asp-action="Index" title="Accounts Payable"><span class="nav-icon">&#128184;</span><span class="nav-text">Accounts Payable</span></a>
+                </div>
+
+                <div class="app-nav-heading"><span class="nav-icon" aria-hidden="true">&#128176;</span><span class="nav-text">Finance</span><span class="nav-caret" aria-hidden="true">&#9662;</span></div>
+                <div class="app-nav-group">
+                    <a class="app-nav-link@(ActiveIf("Income"))" asp-area="" asp-controller="Income" asp-action="Index" title="Income"><span class="nav-icon">&#128200;</span><span class="nav-text">Income</span></a>
+                    <a class="app-nav-link@(ActiveIf("Expenses"))" asp-area="" asp-controller="Expenses" asp-action="Index" title="Expenses"><span class="nav-icon">&#128201;</span><span class="nav-text">Expenses</span></a>
+                    <a class="app-nav-link@(ActiveIf("AccountsReceivable"))" asp-area="" asp-controller="AccountsReceivable" asp-action="Index" title="Accounts Receivable"><span class="nav-icon">&#128181;</span><span class="nav-text">Accounts Receivable</span></a>
+                    <a class="app-nav-link@(ActiveIf("BusinessDate"))" asp-area="" asp-controller="BusinessDate" asp-action="Index" title="Business Date"><span class="nav-icon">&#128197;</span><span class="nav-text">Business Date</span></a>
+                    <a class="app-nav-link@(ActiveIf("NightAudit"))" asp-area="" asp-controller="NightAudit" asp-action="Index" title="Night Audit"><span class="nav-icon">&#127761;</span><span class="nav-text">Night Audit</span></a>
+                    <a class="app-nav-link@(ActiveIf("DailyClosing"))" asp-area="" asp-controller="DailyClosing" asp-action="Index" title="Daily Closing"><span class="nav-icon">&#128274;</span><span class="nav-text">Daily Closing</span></a>
+                </div>
+
+                <div class="app-nav-heading"><span class="nav-icon" aria-hidden="true">&#128200;</span><span class="nav-text">Reports</span><span class="nav-caret" aria-hidden="true">&#9662;</span></div>
+                <div class="app-nav-group">
+                    <a class="app-nav-link@(ActiveIf("Reports"))" asp-area="" asp-controller="Reports" asp-action="Index" title="All Reports"><span class="nav-icon">&#128203;</span><span class="nav-text">All Reports</span></a>
+                    <a class="app-nav-link" asp-area="" asp-controller="Reports" asp-action="Hotel" title="Hotel"><span class="nav-icon">&#127968;</span><span class="nav-text">Hotel</span></a>
+                    <a class="app-nav-link" asp-area="" asp-controller="Reports" asp-action="Reservations" title="Reservations"><span class="nav-icon">&#128197;</span><span class="nav-text">Reservations</span></a>
+                    <a class="app-nav-link" asp-area="" asp-controller="Reports" asp-action="Amenities" title="Amenities"><span class="nav-icon">&#127958;&#65039;</span><span class="nav-text">Amenities</span></a>
+                    <a class="app-nav-link" asp-area="" asp-controller="Reports" asp-action="POS" title="POS / Sales"><span class="nav-icon">&#128179;</span><span class="nav-text">POS / Sales</span></a>
+                    <a class="app-nav-link" asp-area="" asp-controller="Reports" asp-action="Inventory" title="Inventory"><span class="nav-icon">&#128230;</span><span class="nav-text">Inventory</span></a>
+                    <a class="app-nav-link" asp-area="" asp-controller="Reports" asp-action="Financial" title="Financial"><span class="nav-icon">&#128176;</span><span class="nav-text">Financial</span></a>
+                    <a class="app-nav-link" asp-area="" asp-controller="Reports" asp-action="Discounts" title="Discounts"><span class="nav-icon">&#127991;&#65039;</span><span class="nav-text">Discounts</span></a>
+                </div>
+
+                <div class="app-nav-heading"><span class="nav-icon" aria-hidden="true">&#9881;&#65039;</span><span class="nav-text">Administration</span><span class="nav-caret" aria-hidden="true">&#9662;</span></div>
+                <div class="app-nav-group">
+                    <a class="app-nav-link@(ActiveIf("Users", "Admin"))" asp-area="Admin" asp-controller="Users" asp-action="Index" title="Users"><span class="nav-icon">&#128101;</span><span class="nav-text">Users</span></a>
+                    <a class="app-nav-link@(ActiveIf("Roles", "Admin"))" asp-area="Admin" asp-controller="Roles" asp-action="Index" title="Roles &amp; Permissions"><span class="nav-icon">&#128272;</span><span class="nav-text">Roles &amp; Permissions</span></a>
+                    <a class="app-nav-link@(ActiveIf("SystemSettings", "Admin"))" asp-area="Admin" asp-controller="SystemSettings" asp-action="Index" title="System Settings"><span class="nav-icon">&#9881;&#65039;</span><span class="nav-text">System Settings</span></a>
+                    <a class="app-nav-link@(ActiveIf("AuditTrail", "Admin"))" asp-area="Admin" asp-controller="AuditTrail" asp-action="Index" title="Audit Trail"><span class="nav-icon">&#128220;</span><span class="nav-text">Audit Trail</span></a>
+                    <a class="app-nav-link@(ActiveIf("Backup"))" asp-area="" asp-controller="Backup" asp-action="Index" title="Backup &amp; Restore"><span class="nav-icon">&#128190;</span><span class="nav-text">Backup &amp; Restore</span></a>
+                </div>
+            </nav>
+        </aside>
+
+        <div class="app-main">
+            <header class="app-topbar">
+                <button class="app-sidebar-toggle" type="button" aria-label="Toggle navigation" onclick="document.querySelector('.app-shell').classList.toggle('sidebar-collapsed')">
+                    &#9776;
+                </button>
+
+                <form asp-area="" asp-controller="Search" asp-action="Go" method="get" class="topbar-search d-none d-md-flex">
+                    <input type="text" name="q" class="form-control form-control-sm" placeholder="Search guest, room #, or reservation #..." aria-label="Quick search" />
+                </form>
+
+                @* Mobile only: search collapses to an icon rather than disappearing entirely
+                   (Section: mobile design pass) - tapping it drops the same search form
+                   down as a full-width overlay just below the topbar. *@
+                <button class="topbar-mobile-search-btn d-md-none" type="button" aria-label="Search"
+                        onclick="document.querySelector('.app-topbar').classList.toggle('mobile-search-open'); document.querySelector('.topbar-search input').focus();">
+                    &#128269;
+                </button>
+
+                <div class="flex-grow-1"></div>
+
+                <span class="topbar-clock small text-muted me-3 d-none d-lg-inline" id="topbarClock" aria-live="off"></span>
+
+                <button class="btn btn-sm btn-light me-2" type="button" title="Keyboard shortcuts (Alt+/)" aria-label="Show keyboard shortcuts" data-bs-toggle="modal" data-bs-target="#shortcutsModal">
+                    &#8963;
+                </button>
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @await Component.InvokeAsync("Notifications")
+
+                    <div class="dropdown ms-2">
+                        <button class="btn btn-sm btn-light d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="user-avatar" aria-hidden="true">@(User.Identity.Name?.Trim().Substring(0, 1).ToUpperInvariant())</span>
+                            <span class="d-none d-sm-flex flex-column text-start lh-sm">
+                                <span class="small fw-semibold">@User.Identity.Name</span>
+                                @if (userRole is not null)
+                                {
+                                    <span class="text-muted" style="font-size:.72rem">@userRole</span>
+                                }
+                            </span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <span class="dropdown-item-text small text-muted">Signed in as</span>
+                            <span class="dropdown-item-text small fw-semibold">@User.Identity.Name</span>
+                            <div class="dropdown-divider"></div>
+                            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="dropdown-item">Log out</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </header>
+
+            <main class="app-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    @* Section 3: keyboard shortcuts to the day-to-day modules, plus this help modal so
+       the shortcuts are actually discoverable rather than a hidden feature - opened via
+       the topbar button above, Alt+/, or "?" (see the shortcuts.js block below). *@
+    <div class="modal fade" id="shortcutsModal" tabindex="-1" aria-labelledby="shortcutsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shortcutsModalLabel">Keyboard Shortcuts</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-unstyled mb-0 small">
+                        @foreach (var s in shortcuts)
+                        {
+                            <li class="d-flex justify-content-between py-1">
+                                <span>@s.Label</span>
+                                <kbd>Alt+@s.Key</kbd>
+                            </li>
+                        }
+                        <li class="d-flex justify-content-between py-1 border-top mt-1 pt-2">
+                            <span>Show this list</span>
+                            <kbd>Alt+/</kbd>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Section 3: header clock - purely client-side display, never used for any
+        // business calculation (Business Date/BusinessDateService is the source of truth
+        // for anything financial or operational).
+        (function () {
+            var el = document.getElementById('topbarClock');
+            if (!el) return;
+            function tick() {
+                el.textContent = new Date().toLocaleString(undefined, {
+                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+            tick();
+            setInterval(tick, 30000);
+        })();
+
+        // Sidebar sections (Operations/Sales/Inventory/Finance/Reports/Administration):
+        // each heading is a "parent" for the group of links right after it. Every group
+        // starts collapsed on load - except the one containing the page's active link,
+        // so navigating somewhere never hides the section you're actually in - and the
+        // user expands/collapses any section manually by clicking (or Enter/Space on)
+        // its heading. Plain vanilla JS, no new dependency, matching how this sidebar's
+        // collapse toggle already works.
+        (function () {
+            document.querySelectorAll('.app-nav-heading').forEach(function (heading) {
+                var group = heading.nextElementSibling;
+                if (!group || !group.classList.contains('app-nav-group')) return;
+
+                var hasActiveLink = group.querySelector('.app-nav-link.active') !== null;
+
+                function setState(collapsed) {
+                    group.classList.toggle('collapsed', collapsed);
+                    heading.classList.toggle('collapsed', collapsed);
+                    heading.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                }
+
+                heading.setAttribute('role', 'button');
+                heading.setAttribute('tabindex', '0');
+                setState(!hasActiveLink);
+
+                heading.addEventListener('click', function () {
+                    setState(!group.classList.contains('collapsed'));
+                });
+                heading.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setState(!group.classList.contains('collapsed'));
+                    }
+                });
+            });
+        })();
+
+        // Section 3: Alt+<digit> jumps to a frequently-used module from anywhere in the
+        // app; Alt+/ (or "?" outside of a text field) opens the shortcuts list above.
+        // Target URLs come from the server (via Url.Action in the Razor block above) so
+        // they stay correct if routing ever changes, rather than hard-coding paths here.
+        (function () {
+            var shortcuts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                shortcuts.Where(s => s.Url is not null).Select(s => new { s.Key, s.Url, s.Label })));
+
+            document.addEventListener('keydown', function (e) {
+                if (!e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) return;
+
+                if (e.key === '/') {
+                    e.preventDefault();
+                    var modalEl = document.getElementById('shortcutsModal');
+                    if (modalEl && window.bootstrap) {
+                        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    }
+                    return;
+                }
+
+                var match = shortcuts.find(function (s) { return s.Key === e.key; });
+                if (match) {
+                    e.preventDefault();
+                    window.location.href = match.Url;
+                }
+            });
+
+            // "?" also opens the list (a common convention elsewhere), but only when the
+            // user isn't actually typing a literal "?" into a field.
+            document.addEventListener('keydown', function (e) {
+                if (e.key !== '?' || e.altKey || e.ctrlKey || e.metaKey) return;
+                var tag = document.activeElement ? document.activeElement.tagName : '';
+                var editable = document.activeElement && document.activeElement.isContentEditable;
+                if (tag === 'INPUT' || tag === 'TEXTAREA' || editable) return;
+                e.preventDefault();
+                var modalEl = document.getElementById('shortcutsModal');
+                if (modalEl && window.bootstrap) {
+                    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
+            });
+        })();
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

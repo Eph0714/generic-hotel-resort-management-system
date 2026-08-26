@@ -1,0 +1,43 @@
+@model List<HotelResortMS.Core.Interfaces.DashboardAlert>
+@{
+    var activeCount = Model.Count(a => a.Severity != HotelResortMS.Core.Interfaces.AlertSeverity.Success);
+
+    string IconFor(HotelResortMS.Core.Interfaces.AlertSeverity s) => s switch
+    {
+        HotelResortMS.Core.Interfaces.AlertSeverity.Critical => "danger",
+        HotelResortMS.Core.Interfaces.AlertSeverity.Warning => "warning",
+        HotelResortMS.Core.Interfaces.AlertSeverity.Success => "success",
+        _ => "info"
+    };
+}
+<div class="dropdown notif-dropdown">
+    <button class="btn btn-sm btn-light position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+        <span aria-hidden="true">&#128276;</span>
+        @if (activeCount > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                @(activeCount > 9 ? "9+" : activeCount.ToString())
+                <span class="visually-hidden">unread alerts</span>
+            </span>
+        }
+    </button>
+    <div class="dropdown-menu dropdown-menu-end notif-panel p-0">
+        <div class="px-3 py-2 border-bottom fw-semibold">Notifications</div>
+        <div class="notif-list">
+            @foreach (var a in Model)
+            {
+                var routeValues = new Microsoft.AspNetCore.Routing.RouteValueDictionary(a.RouteValues);
+                // Always set "area" explicitly (even to "") rather than only when a.Area is
+                // non-empty - Url.Action otherwise inherits whatever area the CURRENT page is
+                // in as an ambient value, sending a non-Area alert to e.g. "/Admin/Dashboard"
+                // (404) when clicked from an Admin-area page.
+                routeValues["area"] = a.Area ?? "";
+                <a class="dropdown-item d-flex align-items-start gap-2 py-2"
+                   href="@Url.Action(a.Action, a.Controller, routeValues)">
+                    <span class="badge bg-@IconFor(a.Severity) mt-1">&nbsp;</span>
+                    <span class="small">@a.Message</span>
+                </a>
+            }
+        </div>
+    </div>
+</div>

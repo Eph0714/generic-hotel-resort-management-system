@@ -1,0 +1,18 @@
+@model HotelResortMS.Web.Models.Reports.ReportDateRange
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <form method="get" class="row g-2">
+        <div class="col-auto"><input type="date" name="from" value="@Model.From.ToString("yyyy-MM-dd")" class="form-control form-control-sm" /></div>
+        <div class="col-auto"><input type="date" name="to" value="@Model.To.ToString("yyyy-MM-dd")" class="form-control form-control-sm" /></div>
+        <div class="col-auto"><button type="submit" class="btn btn-sm btn-outline-secondary">Filter</button></div>
+    </form>
+    <div>
+        <a href="?from=@Model.From.ToString("yyyy-MM-dd")&amp;to=@Model.To.ToString("yyyy-MM-dd")&amp;export=csv" class="btn btn-sm btn-outline-secondary">Export CSV</a>
+        <button type="button" onclick="window.print()" class="btn btn-sm btn-outline-secondary">Print / PDF</button>
+    </div>
+</div>
+<style>
+    @@media print {
+        .app-sidebar, .app-topbar, .no-print { display: none !important; }
+        .app-content { padding: 0 !important; }
+    }
+</style>

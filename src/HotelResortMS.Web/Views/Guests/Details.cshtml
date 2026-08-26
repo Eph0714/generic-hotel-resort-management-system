@@ -1,0 +1,43 @@
+@model HotelResortMS.Web.Models.Guests.GuestDetailsViewModel
+@{
+    ViewData["Title"] = "Guest - " + Model.Guest.FirstName + " " + Model.Guest.LastName;
+}
+<h3 class="mb-1">@Model.Guest.FirstName @Model.Guest.LastName</h3>
+<p class="text-muted mb-3">@Model.Guest.Email &middot; @Model.Guest.Phone</p>
+
+<div class="row g-3 mb-3">
+    <div class="col-sm-4">
+        <div class="stat-card">
+            <div class="stat-label">Outstanding Balance</div>
+            <div class="stat-value">@Model.OutstandingBalance.ToString("N2")</div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="stat-card">
+            <div class="stat-label">Total Reservations</div>
+            <div class="stat-value">@Model.Reservations.Count</div>
+        </div>
+    </div>
+</div>
+
+<h5>Reservation History</h5>
+<div class="table-responsive mb-3">
+<table class="table table-sm bg-white">
+    <thead><tr><th>Reservation #</th><th>Check-In</th><th>Check-Out</th><th>Status</th><th>Total</th><th>Balance</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model.Reservations)
+    {
+        <tr>
+            <td><a asp-controller="Reservations" asp-action="Details" asp-route-id="@r.Id">@r.ReservationNumber</a></td>
+            <td>@r.CheckInDate.ToString("yyyy-MM-dd")</td>
+            <td>@r.CheckOutDate.ToString("yyyy-MM-dd")</td>
+            <td><span class="badge bg-secondary">@r.Status</span></td>
+            <td>@r.TotalAmount.ToString("N2")</td>
+            <td>@r.BalanceDue.ToString("N2")</td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>
+
+<a asp-action="Index" class="btn btn-outline-secondary btn-sm">Back to Guests</a>

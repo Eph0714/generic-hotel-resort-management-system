@@ -1,0 +1,36 @@
+@model List<HotelResortMS.Core.Entities.Room>
+@{
+    ViewData["Title"] = "Room Status Board";
+
+    string BadgeClass(HotelResortMS.Core.Entities.RoomStatus status) => status switch
+    {
+        HotelResortMS.Core.Entities.RoomStatus.Available => "success",
+        HotelResortMS.Core.Entities.RoomStatus.Reserved => "info",
+        HotelResortMS.Core.Entities.RoomStatus.Occupied => "primary",
+        HotelResortMS.Core.Entities.RoomStatus.Dirty => "warning",
+        HotelResortMS.Core.Entities.RoomStatus.Cleaning => "warning",
+        HotelResortMS.Core.Entities.RoomStatus.Clean => "info",
+        HotelResortMS.Core.Entities.RoomStatus.Inspected => "info",
+        HotelResortMS.Core.Entities.RoomStatus.Ready => "success",
+        HotelResortMS.Core.Entities.RoomStatus.Maintenance => "danger",
+        HotelResortMS.Core.Entities.RoomStatus.OutOfService => "dark",
+        _ => "secondary"
+    };
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Room Status Board</h3>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">List View</a>
+</div>
+
+<div class="row g-2">
+@foreach (var room in Model)
+{
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <div class="border rounded p-2 bg-white text-center h-100">
+            <div class="fw-bold">@room.RoomNumber</div>
+            <div class="text-muted small">@room.RoomType?.Name</div>
+            <span class="badge bg-@BadgeClass(room.Status) mt-1">@room.Status</span>
+        </div>
+    </div>
+}
+</div>

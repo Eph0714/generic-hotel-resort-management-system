@@ -1,0 +1,207 @@
+@model HotelResortMS.Web.Models.Sales.POSSaleViewModel
+@{
+    ViewData["Title"] = "Point of Sale";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Point of Sale</h3>
+    <a asp-action="History" class="btn btn-sm btn-outline-secondary">Sale History</a>
+</div>
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <input type="text" id="productSearch" class="form-control form-control-sm mb-2" placeholder="Search products..." />
+        <div class="table-responsive bg-white border rounded" style="max-height:520px; overflow-y:auto">
+            <table class="table table-sm table-hover mb-0" id="productTable">
+                <thead class="table-light"><tr><th>Product</th><th>Category</th><th class="text-end">Price</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var p in Model.Products)
+                {
+                    <tr data-name="@p.Name.ToLower()">
+                        <td>@p.Name</td>
+                        <td>@p.ProductCategory?.Name</td>
+                        <td class="text-end">@p.UnitPrice.ToString("N2")</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary add-item"
+                                    data-id="@p.Id" data-name="@p.Name" data-price="@p.UnitPrice.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)">Add</button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <form asp-action="Complete" method="post" id="saleForm" class="bg-white p-3 rounded border">
+            @Html.AntiForgeryToken()
+            <div class="table-responsive mb-2">
+                <table class="table table-sm mb-0" id="cartTable">
+                    <thead><tr><th>Item</th><th class="text-end">Qty</th><th class="text-end">Total</th><th></th></tr></thead>
+                    <tbody id="cartBody"></tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between mb-2"><span>Gross</span><strong id="grossDisplay">0.00</strong></div>
+
+            <div class="mb-2">
+                <label class="form-label small">Guest (optional - required for room charge)</label>
+                <select name="GuestId" id="guestSelect" class="form-select form-select-sm">
+                    <option value="">-- Walk-in --</option>
+                    @foreach (var g in Model.Guests)
+                    {
+                        <option value="@g.Id">@g.LastName, @g.FirstName</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label small">Charge to Room Folio (optional)</label>
+                <select name="GuestFolioId" id="folioSelect" class="form-select form-select-sm">
+                    <option value="">-- None (pay now) --</option>
+                </select>
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label small">Discount (optional)</label>
+                <select name="DiscountId" class="form-select form-select-sm">
+                    <option value="">-- None --</option>
+                    @foreach (var d in Model.ActiveDiscounts)
+                    {
+                        <option value="@d.Id">@d.Name</option>
+                    }
+                </select>
+            </div>
+
+            @if ((bool)ViewBag.CanOverrideDiscounts)
+            {
+                <div class="mb-2 border rounded p-2">
+                    <div class="form-check">
+                        <input type="checkbox" name="IsManualOverride" value="true" class="form-check-input" id="manualOverride" />
+                        <label class="form-check-label small" for="manualOverride">
+                            Manual discount override <span class="text-muted">(bypasses eligibility/active-window checks - Section 18)</span>
+                        </label>
+                    </div>
+                    <input type="text" name="OverrideReason" id="overrideReason" class="form-control form-control-sm mt-1" placeholder="Reason (required if overriding)" disabled />
+                </div>
+            }
+
+            <div class="mb-2" id="paymentSection">
+                <label class="form-label small">Payment Method</label>
+                <select name="PaymentMethod" class="form-select form-select-sm">
+                    @foreach (var m in Enum.GetValues<HotelResortMS.Core.Entities.PaymentMethod>())
+                    {
+                        <option value="@m">@m</option>
+                    }
+                </select>
+                <input type="text" name="PaymentReference" class="form-control form-control-sm mt-1" placeholder="Reference number (optional)" />
+            </div>
+
+            <div id="cartInputs"></div>
+            <button type="submit" class="btn btn-primary w-100 mt-2" id="completeBtn" disabled>Complete Sale</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const cart = {}; // productId -> { name, price, qty }
+
+    document.getElementById('productSearch').addEventListener('input', function (e) {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('#productTable tbody tr').forEach(function (row) {
+            row.style.display = row.dataset.name.includes(term) ? '' : 'none';
+        });
+    });
+
+    document.querySelectorAll('.add-item').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const id = btn.dataset.id;
+            if (!cart[id]) {
+                cart[id] = { name: btn.dataset.name, price: parseFloat(btn.dataset.price), qty: 0 };
+            }
+            cart[id].qty += 1;
+            renderCart();
+        });
+    });
+
+    function renderCart() {
+        const body = document.getElementById('cartBody');
+        const inputs = document.getElementById('cartInputs');
+        body.innerHTML = '';
+        inputs.innerHTML = '';
+        let gross = 0;
+
+        Object.keys(cart).forEach(function (id) {
+            const item = cart[id];
+            if (item.qty <= 0) return;
+            const lineTotal = item.price * item.qty;
+            gross += lineTotal;
+
+            const row = document.createElement('tr');
+            row.innerHTML = '<td>' + item.name + '</td>' +
+                '<td class="text-end">' +
+                    '<button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 qty-minus" data-id="' + id + '">-</button> ' +
+                    item.qty +
+                    ' <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 qty-plus" data-id="' + id + '">+</button>' +
+                '</td>' +
+                '<td class="text-end">' + lineTotal.toFixed(2) + '</td>' +
+                '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 remove-item" data-id="' + id + '">&times;</button></td>';
+            body.appendChild(row);
+
+            inputs.innerHTML += '<input type="hidden" name="ProductId" value="' + id + '" />' +
+                '<input type="hidden" name="Quantity" value="' + item.qty + '" />';
+        });
+
+        document.getElementById('grossDisplay').textContent = gross.toFixed(2);
+        document.getElementById('completeBtn').disabled = gross <= 0;
+
+        body.querySelectorAll('.qty-plus').forEach(function (b) {
+            b.addEventListener('click', function () { cart[b.dataset.id].qty += 1; renderCart(); });
+        });
+        body.querySelectorAll('.qty-minus').forEach(function (b) {
+            b.addEventListener('click', function () { cart[b.dataset.id].qty -= 1; renderCart(); });
+        });
+        body.querySelectorAll('.remove-item').forEach(function (b) {
+            b.addEventListener('click', function () { delete cart[b.dataset.id]; renderCart(); });
+        });
+    }
+
+    // When a guest is selected, load their open folios for the room-charge dropdown.
+    document.getElementById('guestSelect').addEventListener('change', function (e) {
+        const folioSelect = document.getElementById('folioSelect');
+        folioSelect.innerHTML = '<option value="">-- None (pay now) --</option>';
+        if (!e.target.value) { togglePayment(true); return; }
+
+        fetch('@Url.Action("OpenFolios")?guestId=' + e.target.value)
+            .then(function (r) { return r.json(); })
+            .then(function (folios) {
+                folios.forEach(function (f) {
+                    const opt = document.createElement('option');
+                    opt.value = f.id;
+                    opt.textContent = f.folioNumber + (f.reservationNumber ? ' (' + f.reservationNumber + ')' : '');
+                    folioSelect.appendChild(opt);
+                });
+            });
+    });
+
+    document.getElementById('folioSelect').addEventListener('change', function (e) {
+        togglePayment(!e.target.value);
+    });
+
+    function togglePayment(show) {
+        document.getElementById('paymentSection').style.display = show ? '' : 'none';
+    }
+
+    const overrideCheckbox = document.getElementById('manualOverride');
+    if (overrideCheckbox) {
+        overrideCheckbox.addEventListener('change', function (e) {
+            const reasonField = document.getElementById('overrideReason');
+            reasonField.disabled = !e.target.checked;
+            reasonField.required = e.target.checked;
+            if (!e.target.checked) reasonField.value = '';
+        });
+    }
+})();
+</script>
+}

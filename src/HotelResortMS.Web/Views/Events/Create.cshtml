@@ -1,0 +1,56 @@
+@model HotelResortMS.Web.Models.Operations.EventCreateViewModel
+@{
+    ViewData["Title"] = "Add Event";
+}
+<h3 class="mb-3">Add Event</h3>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Create" method="post" class="bg-white p-3 rounded border" style="max-width:640px">
+    <div class="row">
+        <div class="col-6 mb-3">
+            <label asp-for="EventTypeId" class="form-label"></label>
+            <select asp-for="EventTypeId" class="form-select">
+                <option value="">-- Select --</option>
+                @foreach (var t in Model.EventTypes)
+                {
+                    <option value="@t.Id">@t.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 mb-3">
+            <label asp-for="EventVenueId" class="form-label"></label>
+            <select asp-for="EventVenueId" class="form-select">
+                <option value="">-- Select --</option>
+                @foreach (var v in Model.Venues)
+                {
+                    <option value="@v.Id">@v.Name (cap. @v.Capacity)</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6 mb-3">
+            <label asp-for="GuestId" class="form-label">Guest (optional)</label>
+            <select asp-for="GuestId" class="form-select">
+                <option value="">-- Walk-in client --</option>
+                @foreach (var g in Model.Guests)
+                {
+                    <option value="@g.Id">@g.LastName, @g.FirstName</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 mb-3"><label asp-for="ClientName" class="form-label">Client Name (if not a guest)</label><input asp-for="ClientName" class="form-control" /></div>
+    </div>
+    <div class="mb-3"><label asp-for="ClientContact" class="form-label"></label><input asp-for="ClientContact" class="form-control" /></div>
+    <div class="row">
+        <div class="col-6 mb-3"><label asp-for="StartDateTime" class="form-label"></label><input asp-for="StartDateTime" type="datetime-local" class="form-control" /></div>
+        <div class="col-6 mb-3"><label asp-for="EndDateTime" class="form-label"></label><input asp-for="EndDateTime" type="datetime-local" class="form-control" /></div>
+    </div>
+    <div class="row">
+        <div class="col-4 mb-3"><label asp-for="ExpectedGuests" class="form-label"></label><input asp-for="ExpectedGuests" type="number" class="form-control" /></div>
+        <div class="col-4 mb-3"><label asp-for="TotalAmount" class="form-label"></label><input asp-for="TotalAmount" type="number" step="0.01" class="form-control" /></div>
+        <div class="col-4 mb-3"><label asp-for="DepositAmount" class="form-label"></label><input asp-for="DepositAmount" type="number" step="0.01" class="form-control" /></div>
+    </div>
+    <div class="mb-3"><label asp-for="Notes" class="form-label"></label><textarea asp-for="Notes" class="form-control"></textarea></div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

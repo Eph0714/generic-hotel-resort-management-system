@@ -1,0 +1,63 @@
+@model HotelResortMS.Web.Models.Reports.InventoryReportViewModel
+@{
+    ViewData["Title"] = "Inventory Reports";
+}
+<h3 class="mb-3">Inventory Reports</h3>
+@await Html.PartialAsync("_FilterBar", Model.Range)
+
+<div class="row g-3 mb-3">
+    <div class="col-sm-4"><div class="stat-card"><div class="stat-label">Active Items</div><div class="stat-value">@Model.CurrentStock.Count</div></div></div>
+    <div class="col-sm-4"><div class="stat-card"><div class="stat-label">Low Stock</div><div class="stat-value">@Model.LowStock.Count</div></div></div>
+    <div class="col-sm-4"><div class="stat-card"><div class="stat-label">Total Valuation (Cost)</div><div class="stat-value">@Model.TotalValuation.ToString("N2")</div></div></div>
+</div>
+
+@if (Model.LowStock.Count > 0)
+{
+    <div class="alert alert-warning">
+        <strong>Low Stock:</strong> @string.Join(", ", Model.LowStock.Select(i => i.Name))
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card"><div class="card-header">Stock In (@Model.StockIn.Count)</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <tbody>@foreach (var t in Model.StockIn) { <tr><td>@t.InventoryItem?.Name</td><td class="text-end text-success">+@t.Quantity.ToString("N2")</td></tr> }</tbody>
+        </table></div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card"><div class="card-header">Stock Out (@Model.StockOut.Count)</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <tbody>@foreach (var t in Model.StockOut) { <tr><td>@t.InventoryItem?.Name</td><td class="text-end text-danger">@t.Quantity.ToString("N2")</td></tr> }</tbody>
+        </table></div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card"><div class="card-header">Waste (@Model.Waste.Count)</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <tbody>@foreach (var t in Model.Waste) { <tr><td>@t.InventoryItem?.Name</td><td>@t.Notes</td></tr> }</tbody>
+        </table></div></div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">Purchases (@Model.Purchases.Count)</div>
+    <div class="table-responsive"><table class="table table-sm mb-0">
+        <thead><tr><th>PO #</th><th>Supplier</th><th>Order Date</th><th>Status</th><th class="text-end">Total</th></tr></thead>
+        <tbody>@foreach (var p in Model.Purchases) { <tr><td>@p.PONumber</td><td>@p.Supplier?.Name</td><td>@p.OrderDate.ToString("yyyy-MM-dd")</td><td>@p.Status</td><td class="text-end">@p.TotalAmount.ToString("N2")</td></tr> }</tbody>
+    </table></div>
+</div>
+
+<div class="card">
+    <div class="card-header">Current Inventory</div>
+    <div class="table-responsive"><table class="table table-sm mb-0">
+        <thead><tr><th>SKU</th><th>Name</th><th class="text-end">Stock</th><th>Unit</th><th class="text-end">Value</th></tr></thead>
+        <tbody>
+        @foreach (var i in Model.CurrentStock)
+        {
+            <tr class="@(i.CurrentStock <= i.ReorderLevel ? "table-warning" : "")">
+                <td>@i.Sku</td><td>@i.Name</td><td class="text-end">@i.CurrentStock.ToString("N2")</td><td>@i.UnitOfMeasure?.Abbreviation</td><td class="text-end">@((i.CurrentStock * i.Cost).ToString("N2"))</td>
+            </tr>
+        }
+        </tbody>
+    </table></div>
+</div>

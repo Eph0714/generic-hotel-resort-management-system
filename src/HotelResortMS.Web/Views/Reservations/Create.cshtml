@@ -1,0 +1,318 @@
+@model HotelResortMS.Web.Models.Reservations.ReservationCreateViewModel
+@{
+    ViewData["Title"] = "New Reservation";
+}
+<h3 class="mb-3">New Reservation</h3>
+<div asp-validation-summary="All" class="text-danger"></div>
+
+<form asp-action="Create" method="post" class="bg-white p-3 rounded border" style="max-width:640px">
+    <div class="mb-3">
+        <label asp-for="GuestId" class="form-label"></label>
+        <div class="d-flex gap-2">
+            <select asp-for="GuestId" id="guestSelect" class="form-select">
+                <option value="">-- Select guest --</option>
+                @foreach (var g in Model.Guests) { <option value="@g.Id">@g.FirstName @g.LastName</option> }
+            </select>
+            <button type="button" class="btn btn-outline-secondary text-nowrap" data-bs-toggle="modal" data-bs-target="#guestPickerModal">Browse Guests</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6 mb-3"><label asp-for="CheckInDate" class="form-label"></label><input asp-for="CheckInDate" type="date" id="checkInDate" class="form-control" /></div>
+        <div class="col-6 mb-3"><label asp-for="CheckOutDate" class="form-label"></label><input asp-for="CheckOutDate" type="date" id="checkOutDate" class="form-control" /></div>
+    </div>
+    <div class="mb-3"><label asp-for="NumberOfGuests" class="form-label"></label><input asp-for="NumberOfGuests" type="number" class="form-control" /></div>
+
+    <div class="mb-3">
+        <label class="form-label">Available Room(s)</label>
+        <div id="roomList" class="border rounded p-2" style="max-height:200px; overflow-y:auto">
+            @foreach (var r in Model.AvailableRooms)
+            {
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="RoomIds" value="@r.Id" id="room_@r.Id" />
+                    <label class="form-check-label" for="room_@r.Id">@r.RoomNumber - @r.RoomType?.Name</label>
+                </div>
+            }
+        </div>
+        <span asp-validation-for="RoomIds" class="text-danger small"></span>
+    </div>
+
+    <div class="row">
+        <div class="col-6 mb-3"><label asp-for="DiscountAmount" class="form-label"></label><input asp-for="DiscountAmount" type="number" step="0.01" class="form-control" /></div>
+        <div class="col-6 mb-3"><label asp-for="AmountPaid" class="form-label"></label><input asp-for="AmountPaid" type="number" step="0.01" class="form-control" /></div>
+    </div>
+    <div class="mb-3"><label asp-for="SpecialRequests" class="form-label"></label><textarea asp-for="SpecialRequests" class="form-control"></textarea></div>
+    <div class="mb-3"><label asp-for="Notes" class="form-label"></label><textarea asp-for="Notes" class="form-control"></textarea></div>
+    <div class="mb-3">
+        <label asp-for="CancellationPolicyId" class="form-label"></label>
+        <select asp-for="CancellationPolicyId" class="form-select">
+            <option value="">-- None (free cancellation) --</option>
+            @foreach (var p in Model.CancellationPolicies)
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="PackageId" class="form-label"></label>
+        <select asp-for="PackageId" class="form-select">
+            <option value="">-- None --</option>
+            @foreach (var p in Model.Packages)
+            {
+                <option value="@p.Id">@p.Name (+@p.Price.ToString("N2"))</option>
+            }
+        </select>
+        <span class="form-text">Adds the package's price to the reservation total and is charged as one line at Check-In.</span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+@* ================= Browse Guests picker - lets staff add/edit/archive a guest
+   right from here without losing the in-progress reservation form. Add/Edit post to
+   GuestsController's *Json endpoints (thin JSON wrappers around the exact same
+   create/update/archive logic as the classic Guests screens - see GuestsController),
+   "Delete" maps to the existing Archive (soft-delete) since Guests has no hard-delete
+   anywhere in the app (a guest's reservation/payment history must never be removable).
+   ================= *@
+<div class="modal fade" id="guestPickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Browse Guests</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex gap-2 mb-3">
+                    <input type="text" id="guestSearchInput" class="form-control" placeholder="Search by name, email, or phone..." />
+                    <button type="button" id="guestAddNewBtn" class="btn btn-success text-nowrap">+ Add New Guest</button>
+                </div>
+                <div id="guestQuickForm" class="border rounded p-3 mb-3 d-none">
+                    <input type="hidden" id="qf_Id" value="0" />
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label small">First Name</label><input type="text" id="qf_FirstName" class="form-control form-control-sm" /></div>
+                        <div class="col-6"><label class="form-label small">Last Name</label><input type="text" id="qf_LastName" class="form-control form-control-sm" /></div>
+                        <div class="col-6"><label class="form-label small">Email</label><input type="email" id="qf_Email" class="form-control form-control-sm" /></div>
+                        <div class="col-6"><label class="form-label small">Phone</label><input type="text" id="qf_Phone" class="form-control form-control-sm" /></div>
+                    </div>
+                    <div class="text-danger small mt-2" id="guestQuickFormError"></div>
+                    <div class="mt-2">
+                        <button type="button" id="guestQuickFormSave" class="btn btn-sm btn-primary">Save</button>
+                        <button type="button" id="guestQuickFormCancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th class="text-end">Actions</th></tr></thead>
+                        <tbody id="guestPickerBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Re-fetches the available-room list whenever the dates change, so the picker never
+    // offers a room that would violate the double-booking rule (Section 21).
+    const checkIn = document.getElementById('checkInDate');
+    const checkOut = document.getElementById('checkOutDate');
+    const roomList = document.getElementById('roomList');
+
+    async function refreshRooms() {
+        if (!checkIn.value || !checkOut.value) return;
+        const url = `/Reservations/AvailableRooms?checkIn=${checkIn.value}&checkOut=${checkOut.value}`;
+        const resp = await fetch(url);
+        if (!resp.ok) return;
+        const rooms = await resp.json();
+        roomList.innerHTML = rooms.map(r => `
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="RoomIds" value="${r.id}" id="room_${r.id}" />
+                <label class="form-check-label" for="room_${r.id}">${r.roomNumber} - ${r.roomType ?? ''}</label>
+            </div>`).join('');
+    }
+
+    checkIn.addEventListener('change', refreshRooms);
+    checkOut.addEventListener('change', refreshRooms);
+
+    // ================= Browse Guests picker =================
+    // Seeded once from the same active-guest list already loaded for the plain <select>
+    // above (Model.Guests) - kept up to date in-memory as guests are added/edited/
+    // archived through this modal, no separate "list guests" endpoint needed.
+    let guestPickerData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Guests.Select(g => new { id = g.Id, firstName = g.FirstName, lastName = g.LastName, email = g.Email, phone = g.Phone })));
+    let currentEditExtra = null;
+
+    const guestSelect = document.getElementById('guestSelect');
+    const guestSearchInput = document.getElementById('guestSearchInput');
+    const guestPickerBody = document.getElementById('guestPickerBody');
+    const guestAddNewBtn = document.getElementById('guestAddNewBtn');
+    const guestQuickForm = document.getElementById('guestQuickForm');
+    const guestQuickFormError = document.getElementById('guestQuickFormError');
+    const qfId = document.getElementById('qf_Id');
+    const qfFirstName = document.getElementById('qf_FirstName');
+    const qfLastName = document.getElementById('qf_LastName');
+    const qfEmail = document.getElementById('qf_Email');
+    const qfPhone = document.getElementById('qf_Phone');
+
+    function antiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    function renderGuestPicker(filter) {
+        const term = (filter || '').trim().toLowerCase();
+        const rows = guestPickerData.filter(g => {
+            if (!term) return true;
+            return `${g.firstName} ${g.lastName}`.toLowerCase().includes(term)
+                || (g.email || '').toLowerCase().includes(term)
+                || (g.phone || '').toLowerCase().includes(term);
+        });
+        guestPickerBody.innerHTML = '';
+        if (rows.length === 0) {
+            guestPickerBody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">No guests found.</td></tr>';
+            return;
+        }
+        rows.forEach(g => {
+            const tr = document.createElement('tr');
+            tr.dataset.id = g.id;
+            const nameTd = document.createElement('td');
+            nameTd.textContent = `${g.firstName} ${g.lastName}`;
+            const emailTd = document.createElement('td');
+            emailTd.textContent = g.email || '';
+            const phoneTd = document.createElement('td');
+            phoneTd.textContent = g.phone || '';
+            const actionsTd = document.createElement('td');
+            actionsTd.className = 'text-end text-nowrap';
+            actionsTd.innerHTML = `
+                <button type="button" class="btn btn-sm btn-primary select-guest-btn">Select</button>
+                <button type="button" class="btn btn-sm btn-outline-primary edit-guest-btn">Edit</button>
+                <button type="button" class="btn btn-sm btn-outline-danger archive-guest-btn">Delete</button>`;
+            tr.append(nameTd, emailTd, phoneTd, actionsTd);
+            guestPickerBody.appendChild(tr);
+        });
+    }
+
+    function showQuickForm() {
+        guestQuickFormError.textContent = '';
+        guestQuickForm.classList.remove('d-none');
+    }
+    function hideQuickForm() {
+        guestQuickForm.classList.add('d-none');
+        currentEditExtra = null;
+    }
+
+    guestAddNewBtn.addEventListener('click', function () {
+        currentEditExtra = null;
+        qfId.value = '0';
+        qfFirstName.value = '';
+        qfLastName.value = '';
+        qfEmail.value = '';
+        qfPhone.value = '';
+        showQuickForm();
+    });
+
+    document.getElementById('guestQuickFormCancel').addEventListener('click', hideQuickForm);
+
+    guestPickerBody.addEventListener('click', async function (e) {
+        const tr = e.target.closest('tr');
+        if (!tr || !tr.dataset.id) return;
+        const id = parseInt(tr.dataset.id, 10);
+
+        if (e.target.classList.contains('select-guest-btn')) {
+            guestSelect.value = id;
+            bootstrap.Modal.getInstance(document.getElementById('guestPickerModal')).hide();
+        } else if (e.target.classList.contains('edit-guest-btn')) {
+            const resp = await fetch(`/Guests/DetailsJson?id=${id}`, { credentials: 'same-origin' });
+            if (!resp.ok) { alert('Could not load guest details.'); return; }
+            const g = await resp.json();
+            currentEditExtra = g;
+            qfId.value = g.id;
+            qfFirstName.value = g.firstName;
+            qfLastName.value = g.lastName;
+            qfEmail.value = g.email || '';
+            qfPhone.value = g.phone || '';
+            showQuickForm();
+        } else if (e.target.classList.contains('archive-guest-btn')) {
+            if (!confirm('Archive this guest? They will no longer appear in guest lists.')) return;
+            const payload = new URLSearchParams();
+            payload.set('__RequestVerificationToken', antiForgeryToken());
+            payload.set('id', id);
+            const resp = await fetch('/Guests/ArchiveJson', {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: payload.toString()
+            });
+            const data = await resp.json();
+            if (!data.success) { alert((data.errors || ['Could not archive guest.']).join(' ')); return; }
+            guestPickerData = guestPickerData.filter(g => g.id !== id);
+            const opt = guestSelect.querySelector(`option[value="${id}"]`);
+            if (opt) opt.remove();
+            if (guestSelect.value == id) guestSelect.value = '';
+            renderGuestPicker(guestSearchInput.value);
+        }
+    });
+
+    document.getElementById('guestQuickFormSave').addEventListener('click', async function () {
+        const isEdit = qfId.value && qfId.value !== '0';
+        const payload = new URLSearchParams();
+        payload.set('__RequestVerificationToken', antiForgeryToken());
+        if (isEdit) payload.set('Id', qfId.value);
+        payload.set('FirstName', qfFirstName.value.trim());
+        payload.set('LastName', qfLastName.value.trim());
+        payload.set('Email', qfEmail.value.trim());
+        payload.set('Phone', qfPhone.value.trim());
+        // Preserve every field not shown in this compact form so a save here never
+        // silently wipes Address/GuestType/Notes/IsActive/etc back to blank.
+        if (isEdit && currentEditExtra) {
+            payload.set('Address', currentEditExtra.address || '');
+            payload.set('City', currentEditExtra.city || '');
+            payload.set('Country', currentEditExtra.country || '');
+            payload.set('GuestType', currentEditExtra.guestType || '');
+            payload.set('CompanyName', currentEditExtra.companyName || '');
+            payload.set('IsSeniorCitizen', currentEditExtra.isSeniorCitizen ? 'true' : 'false');
+            payload.set('SeniorCitizenIdNumber', currentEditExtra.seniorCitizenIdNumber || '');
+            payload.set('IsPwd', currentEditExtra.isPwd ? 'true' : 'false');
+            payload.set('PwdIdNumber', currentEditExtra.pwdIdNumber || '');
+            payload.set('Notes', currentEditExtra.notes || '');
+            payload.set('IsActive', currentEditExtra.isActive === false ? 'false' : 'true');
+        } else {
+            payload.set('IsActive', 'true');
+        }
+
+        const url = isEdit ? '/Guests/EditJson' : '/Guests/CreateJson';
+        const resp = await fetch(url, {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: payload.toString()
+        });
+        const data = await resp.json();
+        if (!data.success) {
+            guestQuickFormError.textContent = (data.errors || ['Something went wrong.']).join(' ');
+            return;
+        }
+        const g = data.guest;
+        if (isEdit) {
+            const idx = guestPickerData.findIndex(x => x.id === g.id);
+            if (idx >= 0) guestPickerData[idx] = g;
+            const opt = guestSelect.querySelector(`option[value="${g.id}"]`);
+            if (opt) opt.textContent = `${g.firstName} ${g.lastName}`;
+        } else {
+            guestPickerData.push(g);
+            const opt = document.createElement('option');
+            opt.value = g.id;
+            opt.textContent = `${g.firstName} ${g.lastName}`;
+            guestSelect.appendChild(opt);
+        }
+        hideQuickForm();
+        renderGuestPicker(guestSearchInput.value);
+    });
+
+    guestSearchInput.addEventListener('input', function () { renderGuestPicker(this.value); });
+    document.getElementById('guestPickerModal').addEventListener('show.bs.modal', function () {
+        guestSearchInput.value = '';
+        hideQuickForm();
+        renderGuestPicker('');
+    });
+</script>
+}

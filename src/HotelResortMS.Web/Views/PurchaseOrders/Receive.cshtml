@@ -1,0 +1,35 @@
+@model HotelResortMS.Core.Entities.PurchaseOrder
+@{
+    ViewData["Title"] = "Receive - " + Model.PONumber;
+}
+<h3 class="mb-3">Receive Goods - @Model.PONumber</h3>
+<p class="text-muted">@Model.Supplier?.Name</p>
+
+<form asp-action="Receive" asp-route-id="@Model.Id" method="post" class="bg-white p-3 rounded border">
+    @Html.AntiForgeryToken()
+    <div class="table-responsive">
+    <table class="table table-sm">
+        <thead><tr><th>Item</th><th class="text-end">Ordered</th><th class="text-end">Already Received</th><th style="width:140px">Receiving Now</th><th style="width:140px">Damaged</th></tr></thead>
+        <tbody>
+        @foreach (var d in Model.Details)
+        {
+            var outstanding = d.QuantityOrdered - d.QuantityReceived;
+            if (outstanding <= 0) { continue; }
+            <tr>
+                <td>
+                    @d.InventoryItem?.Name
+                    <input type="hidden" name="purchaseOrderDetailId" value="@d.Id" />
+                </td>
+                <td class="text-end">@d.QuantityOrdered.ToString("N2")</td>
+                <td class="text-end">@d.QuantityReceived.ToString("N2")</td>
+                <td><input type="number" step="0.01" name="quantityReceived" max="@outstanding" value="@outstanding" class="form-control form-control-sm" /></td>
+                <td><input type="number" step="0.01" name="quantityDamaged" value="0" class="form-control form-control-sm" /></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <div class="mb-3"><label class="form-label">Notes</label><textarea name="notes" class="form-control"></textarea></div>
+    <button type="submit" class="btn btn-success">Post Receiving</button>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Cancel</a>
+</form>

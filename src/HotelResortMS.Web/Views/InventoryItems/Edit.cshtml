@@ -1,0 +1,11 @@
+@model HotelResortMS.Web.Models.Inventory.InventoryItemEditViewModel
+@{
+    ViewData["Title"] = "Edit Inventory Item";
+}
+<h3 class="mb-3">Edit Inventory Item</h3>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Edit" method="post" class="bg-white p-3 rounded border" style="max-width:560px">
+    @await Html.PartialAsync("_Form", Model)
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

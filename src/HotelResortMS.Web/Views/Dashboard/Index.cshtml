@@ -1,0 +1,658 @@
+@using HotelResortMS.Core.Entities
+@using HotelResortMS.Core.Interfaces
+@model HotelResortMS.Web.Models.Dashboard.DashboardViewModel
+@inject IHotelBrandingService HotelBranding
+@{
+    ViewData["Title"] = "Dashboard";
+    var s = Model.Snapshot;
+    var branding = await HotelBranding.GetBrandingAsync();
+
+    // Section 13/44: one status->color mapping reused everywhere a status badge appears
+    // on this page, and kept identical to Rooms/StatusBoard's own mapping so the same
+    // status always means the same color across the whole system.
+    string RoomBadge(RoomStatus st) => st switch
+    {
+        RoomStatus.Available => "success",
+        RoomStatus.Reserved => "info",
+        RoomStatus.Occupied => "primary",
+        RoomStatus.Dirty => "warning",
+        RoomStatus.Cleaning => "warning",
+        RoomStatus.Clean => "info",
+        RoomStatus.Inspected => "info",
+        RoomStatus.Ready => "success",
+        RoomStatus.Maintenance => "danger",
+        RoomStatus.OutOfService => "dark",
+        _ => "secondary"
+    };
+    string ReservationBadge(ReservationStatus st) => st switch
+    {
+        ReservationStatus.Pending => "warning",
+        ReservationStatus.Confirmed => "info",
+        ReservationStatus.CheckedIn => "primary",
+        ReservationStatus.CheckedOut => "success",
+        ReservationStatus.Cancelled => "secondary",
+        ReservationStatus.NoShow => "danger",
+        _ => "secondary"
+    };
+    string AmenityBadge(AmenityStatus st) => st switch
+    {
+        AmenityStatus.Available => "success",
+        AmenityStatus.Reserved => "info",
+        AmenityStatus.InUse => "primary",
+        AmenityStatus.Cleaning => "warning",
+        AmenityStatus.Maintenance => "danger",
+        AmenityStatus.OutOfService => "dark",
+        _ => "secondary"
+    };
+    string AlertDot(AlertSeverity sv) => sv switch
+    {
+        AlertSeverity.Critical => "critical",
+        AlertSeverity.Warning => "warning",
+        AlertSeverity.Success => "success",
+        _ => "info"
+    };
+
+    int RoomCount(RoomStatus st) => s.RoomsByStatus.GetValueOrDefault(st);
+    int ResCount(ReservationStatus st) => s.ReservationsByStatus.GetValueOrDefault(st);
+
+    // Reservation Overview (now a row of notification-style icons above the banner,
+    // not buttons) - one glyph per status, same vocabulary as the rest of the page.
+    string ReservationIcon(ReservationStatus st) => st switch
+    {
+        ReservationStatus.Pending => "⏳",
+        ReservationStatus.Confirmed => "✅",
+        ReservationStatus.CheckedIn => "\U0001F511",
+        ReservationStatus.CheckedOut => "\U0001F6AA",
+        ReservationStatus.Cancelled => "\U0001F6AB",
+        ReservationStatus.NoShow => "⛔",
+        _ => "\U0001F4C5"
+    };
+
+    // Recent Activity (Section 11): a plain relative-time label and an action->color
+    // mapping so Create/Update/Delete read at a glance, same spirit as the status badges
+    // above rather than a separate/new visual language.
+    string RelativeTime(DateTime whenUtc)
+    {
+        var span = DateTime.UtcNow - whenUtc;
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        return $"{(int)span.TotalDays}d ago";
+    }
+    // Many controllers log compound action names (e.g. "DeleteEquipment", "CreateCategory")
+    // rather than the plain verb, so this matches by substring/prefix instead of an exact
+    // switch - same four-color vocabulary as the rest of the page either way.
+    string ActivityBadge(string action) => action switch
+    {
+        _ when action.StartsWith("Create", StringComparison.OrdinalIgnoreCase) => "success",
+        _ when action.StartsWith("Update", StringComparison.OrdinalIgnoreCase) => "info",
+        _ when action.StartsWith("Delete", StringComparison.OrdinalIgnoreCase) => "danger",
+        _ when action.StartsWith("Deactivate", StringComparison.OrdinalIgnoreCase) => "danger",
+        _ when action.Contains("Void", StringComparison.OrdinalIgnoreCase)
+            || action.Contains("Refund", StringComparison.OrdinalIgnoreCase)
+            || action.Contains("Cancel", StringComparison.OrdinalIgnoreCase) => "warning",
+        _ => "secondary"
+    };
+
+    var maxTrend = s.IncomeExpenseTrend.Count == 0 ? 1m : Math.Max(1m, s.IncomeExpenseTrend.Max(t => Math.Max(t.Income, t.Expense)));
+    var attentionRooms = new List<(string Status, string Label)> { };
+}
+@* ================= RESERVATION OVERVIEW (above the banner) - a row of small
+   notification-icon indicators, not buttons: each status is a circular glyph with a
+   badge count in the corner (same visual language as the topbar's notification bell),
+   clicking one still navigates to the filtered Reservations list. ================= *@
+@if (Model.CanSeeReservations)
+{
+    <div class="reservation-notif-bar mb-3">
+        <span class="reservation-notif-bar-label">Reservation Overview <span class="text-muted fw-normal small">(last 30 days)</span></span>
+        <div class="d-flex flex-wrap gap-3">
+            @foreach (var st in Enum.GetValues<ReservationStatus>())
+            {
+                <a class="reservation-notif-icon" asp-controller="Reservations" asp-action="Index" asp-route-status="@st" title="@st: @ResCount(st)">
+                    <span class="reservation-notif-glyph" aria-hidden="true">
+                        @ReservationIcon(st)
+                        @if (ResCount(st) > 0)
+                        {
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-@ReservationBadge(st)">
+                                @(ResCount(st) > 9 ? "9+" : ResCount(st).ToString())
+                            </span>
+                        }
+                    </span>
+                    <span class="reservation-notif-label">@st</span>
+                </a>
+            }
+        </div>
+    </div>
+}
+
+@* Logo + Banner as one combined unit (Admin > System Settings > Branding & Theme) - the
+   logo sits inside the banner as a round badge, side by side with the caption text (a
+   flex gap between them, not an overlap) rather than in its own separate box next to
+   the banner. The banner itself is either an uploaded image or a plain color fill -
+   never a placeholder/stock image - and the whole thing is skipped entirely if neither
+   a logo nor a banner has been configured. *@
+@{
+    var showBannerFill = branding.BannerMode == SupportedBannerModes.Color || branding.BannerUrl is not null;
+    var hasBannerText = !string.IsNullOrWhiteSpace(branding.BannerText);
+    var isImageMode = branding.BannerMode == SupportedBannerModes.Image && branding.BannerUrl is not null;
+    var bannerAlignClass = branding.BannerAlignment switch
+    {
+        SupportedBannerAlignments.Left => "align-left",
+        SupportedBannerAlignments.Right => "align-right",
+        _ => "align-middle"
+    };
+}
+@if (showBannerFill || branding.LogoUrl is not null)
+{
+    <div class="dashboard-banner-box mb-3 @(showBannerFill ? (isImageMode ? "is-image" : "is-color") : "is-plain") @(hasBannerText ? "has-text" : "") @bannerAlignClass"
+         style="@(isImageMode ? $"background-image:url('{branding.BannerUrl}');" : (branding.BannerMode == SupportedBannerModes.Color ? $"background-color:{branding.BannerColor};" : ""))">
+        @if (branding.LogoUrl is not null)
+        {
+            <span class="dashboard-banner-logo-badge">
+                <img src="@branding.LogoUrl" alt="@branding.Name" />
+            </span>
+        }
+        @if (hasBannerText)
+        {
+            <span class="dashboard-banner-text">@branding.BannerText</span>
+        }
+    </div>
+}
+
+@* ================= QUICK ACTIONS (directly below the Banner) - the PANEL spans the
+   full width of the page (col-12), but the buttons inside it wrap as a normal row of
+   pills, not stretched full-width individually. ================= *@
+
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="section-card">
+            <div class="section-card-header">Quick Actions</div>
+            <div class="section-card-body dashboard-feed-body">
+                @* One uniform style/size for every action - no per-module color coding -
+                   so the row reads as a clean, even set of equally-important actions
+                   rather than a rainbow of buttons. Each icon is a plain glyph with NO
+                   fill/background color of its own (no colored badge behind it) and is
+                   never touched by the Theme Color feature (Admin > System Settings >
+                   Branding & Theme) - only the button's own fill changes with the theme. *@
+                <div class="d-flex flex-wrap gap-2">
+                    @if (Model.CanSeeReservations)
+                    {
+                        <a class="dash-action-btn" asp-controller="Reservations" asp-action="Create">
+                            <span class="qa-icon">&#128197;</span><span class="qa-label">+ New Reservation</span>
+                        </a>
+                    }
+                    @if (Model.CanSeeFrontDesk)
+                    {
+                        <a class="dash-action-btn" asp-controller="FrontDesk" asp-action="Index">
+                            <span class="qa-icon">&#128273;</span><span class="qa-label">Check-in / Check-out</span>
+                        </a>
+                    }
+                    @if (Model.CanSeeGuests)
+                    {
+                        <a class="dash-action-btn" asp-controller="Guests" asp-action="Create">
+                            <span class="qa-icon">&#128100;</span><span class="qa-label">+ Add Guest</span>
+                        </a>
+                    }
+                    @if (Model.CanSeeRooms)
+                    {
+                        <a class="dash-action-btn" asp-controller="Rooms" asp-action="Index">
+                            <span class="qa-icon">&#128716;</span><span class="qa-label">Room Management</span>
+                        </a>
+                    }
+                    @if (Model.CanSeeHousekeeping)
+                    {
+                        <a class="dash-action-btn" asp-controller="Housekeeping" asp-action="Index">
+                            <span class="qa-icon">&#129529;</span><span class="qa-label">Housekeeping</span>
+                        </a>
+                    }
+                    @if (Model.CanSeeMaintenance)
+                    {
+                        <a class="dash-action-btn" asp-controller="MaintenanceRequests" asp-action="Create">
+                            <span class="qa-icon">&#128295;</span><span class="qa-label">Maintenance Request</span>
+                        </a>
+                    }
+                    @if (Model.CanSeePOS)
+                    {
+                        <a class="dash-action-btn" asp-controller="POS" asp-action="Index">
+                            <span class="qa-icon">&#128722;</span><span class="qa-label">Point of Sale</span>
+                        </a>
+                    }
+                    @if (Model.CanSeeInventory)
+                    {
+                        <a class="dash-action-btn" asp-controller="InventoryItems" asp-action="Index">
+                            <span class="qa-icon">&#128230;</span><span class="qa-label">Inventory</span>
+                        </a>
+                    }
+                    @if (Model.CanSeePayments)
+                    {
+                        <a class="dash-action-btn" asp-controller="Payments" asp-action="Create">
+                            <span class="qa-icon">&#128181;</span><span class="qa-label">Record Payment</span>
+                        </a>
+                    }
+                    @if (Model.CanSeeFinancial)
+                    {
+                        <a class="dash-action-btn" asp-controller="Expenses" asp-action="Create">
+                            <span class="qa-icon">&#128201;</span><span class="qa-label">Add Expense</span>
+                        </a>
+                    }
+                    <a class="dash-action-btn" asp-controller="Reports" asp-action="Index">
+                        <span class="qa-icon">&#128202;</span><span class="qa-label">View Reports</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h3 class="mb-0">Dashboard</h3>
+        <p class="text-muted mb-0 small">
+            Business Date: <strong>@s.BusinessDate.ToString("MMMM d, yyyy")</strong>
+            <span class="badge bg-secondary">@s.BusinessDateStatus</span>
+        </p>
+    </div>
+    <a asp-action="Index" asp-route-period="@s.TrendPeriodUsed" class="btn btn-sm btn-outline-secondary">&#8635; Refresh</a>
+</div>
+
+@* ================= KPI ROWS ================= *@
+
+@* Each KPI card below gets its own unique fill color (Room Status/Guest Status/
+   Financial), set via inline style like the earlier Quick Actions icon colors - a
+   distinct identity color per metric rather than a plain white card with just a tinted
+   icon. Text/icon colors switch to white via .kpi-filled so they stay readable on top
+   of the saturated fill. *@
+@if (Model.CanSeeRooms)
+{
+    <h6 class="text-muted text-uppercase small mb-2">Room Status</h6>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-xl-2">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:71,85,105" asp-controller="Rooms" asp-action="StatusBoard">
+                <div class="kpi-icon">&#128716;</div>
+                <div><div class="kpi-value">@s.TotalRooms</div><div class="kpi-label">Total Rooms</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:22,163,74" asp-controller="Rooms" asp-action="StatusBoard">
+                <div class="kpi-icon">&#9989;</div>
+                <div><div class="kpi-value">@RoomCount(RoomStatus.Available)</div><div class="kpi-label">Available</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:37,99,235" asp-controller="Rooms" asp-action="StatusBoard">
+                <div class="kpi-icon">&#128100;</div>
+                <div><div class="kpi-value">@RoomCount(RoomStatus.Occupied)</div><div class="kpi-label">Occupied</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:8,145,178" asp-controller="Rooms" asp-action="StatusBoard">
+                <div class="kpi-icon">&#128197;</div>
+                <div><div class="kpi-value">@RoomCount(RoomStatus.Reserved)</div><div class="kpi-label">Reserved</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:217,119,6" asp-controller="Housekeeping" asp-action="Index">
+                <div class="kpi-icon">&#129529;</div>
+                <div><div class="kpi-value">@(RoomCount(RoomStatus.Dirty) + RoomCount(RoomStatus.Cleaning))</div><div class="kpi-label">Cleaning</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:220,38,38" asp-controller="MaintenanceRequests" asp-action="Index">
+                <div class="kpi-icon">&#128295;</div>
+                <div><div class="kpi-value">@RoomCount(RoomStatus.Maintenance)</div><div class="kpi-label">Maintenance</div></div>
+            </a>
+        </div>
+    </div>
+}
+
+@if (Model.CanSeeReservations)
+{
+    <h6 class="text-muted text-uppercase small mb-2">Guest Status</h6>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:124,58,237" asp-controller="Reservations" asp-action="Index" asp-route-status="CheckedIn">
+                <div class="kpi-icon">&#128101;</div>
+                <div><div class="kpi-value">@s.CurrentGuestsCount</div><div class="kpi-label">Current Guests</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:5,150,105" asp-controller="@(Model.CanSeeFrontDesk ? "FrontDesk" : "Reservations")" asp-action="Index">
+                <div class="kpi-icon">&#128229;</div>
+                <div><div class="kpi-value">@s.ArrivalsToday.Count</div><div class="kpi-label">Today's Arrivals</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:234,88,12" asp-controller="@(Model.CanSeeFrontDesk ? "FrontDesk" : "Reservations")" asp-action="Index">
+                <div class="kpi-icon">&#128228;</div>
+                <div><div class="kpi-value">@s.DeparturesToday.Count</div><div class="kpi-label">Today's Check-outs</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:202,138,4" asp-controller="Reservations" asp-action="Index" asp-route-status="Confirmed">
+                <div class="kpi-icon">&#9203;</div>
+                <div><div class="kpi-value">@s.PendingCheckInsCount</div><div class="kpi-label">Pending Check-ins</div></div>
+            </a>
+        </div>
+    </div>
+}
+
+@if (Model.CanSeeFinancial)
+{
+    <h6 class="text-muted text-uppercase small mb-2">Financial (Today)</h6>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:22,163,74" asp-controller="Income" asp-action="Index">
+                <div class="kpi-icon">&#128200;</div>
+                <div><div class="kpi-value">@s.TodayRevenue.ToString("N0")</div><div class="kpi-label">Today's Revenue</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:220,38,38" asp-controller="Expenses" asp-action="Index">
+                <div class="kpi-icon">&#128201;</div>
+                <div><div class="kpi-value">@s.TodayExpenses.ToString("N0")</div><div class="kpi-label">Today's Expenses</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:@(s.TodayNetIncome >= 0 ? "22,163,74" : "220,38,38")" asp-controller="Reports" asp-action="Financial">
+                <div class="kpi-icon">&#128176;</div>
+                <div><div class="kpi-value">@s.TodayNetIncome.ToString("N0")</div><div class="kpi-label">Net Income</div></div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a class="kpi-card kpi-filled" style="--kpi-rgb:217,119,6" asp-controller="AccountsReceivable" asp-action="Index">
+                <div class="kpi-icon">&#128181;</div>
+                <div><div class="kpi-value">@s.OutstandingBalance.ToString("N0")</div><div class="kpi-label">Outstanding Balance</div></div>
+            </a>
+        </div>
+    </div>
+}
+
+@* ================= OCCUPANCY + ROOMS NEEDING ATTENTION ================= *@
+
+@if (Model.CanSeeRooms)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="section-card">
+                <div class="section-card-header">Occupancy</div>
+                <div class="section-card-body">
+                    <div class="occupancy-ring-wrap">
+                        <svg width="110" height="110" viewBox="0 0 110 110" role="img" aria-label="Occupancy @s.OccupancyPercent percent">
+                            <circle cx="55" cy="55" r="46" fill="none" stroke="#eef1f5" stroke-width="12" />
+                            <circle cx="55" cy="55" r="46" fill="none" stroke="#2f6fed" stroke-width="12"
+                                    stroke-dasharray="@(Math.Round(2 * Math.PI * 46, 1).ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                                    stroke-dashoffset="@(Math.Round(2 * Math.PI * 46 * (double)(1 - s.OccupancyPercent / 100m), 1).ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                                    stroke-linecap="round" transform="rotate(-90 55 55)" />
+                            <text x="55" y="60" text-anchor="middle" font-size="20" font-weight="700" fill="#1b2a3a">@s.OccupancyPercent.ToString("0")%</text>
+                        </svg>
+                        <div>
+                            <div class="small text-muted">@RoomCount(RoomStatus.Occupied) of @s.TotalRooms rooms occupied</div>
+                            <a asp-controller="Rooms" asp-action="StatusBoard" class="small">View full Room Status Board &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="section-card">
+                <div class="section-card-header">
+                    <span>Rooms Needing Attention</span>
+                    <a asp-controller="Rooms" asp-action="StatusBoard" class="small">Full board &rarr;</a>
+                </div>
+                <div class="section-card-body">
+                    @{
+                        var attention = new[] { RoomStatus.Dirty, RoomStatus.Cleaning, RoomStatus.Maintenance, RoomStatus.OutOfService }
+                            .Where(st => RoomCount(st) > 0).ToList();
+                    }
+                    @if (attention.Count == 0)
+                    {
+                        <div class="empty-state">All rooms are clean, available, or in normal use - nothing needs attention.</div>
+                    }
+                    else
+                    {
+                        <div class="row g-2">
+                            @foreach (var st in attention)
+                            {
+                                <div class="col-6 col-sm-3">
+                                    <a class="room-chip" asp-controller="Rooms" asp-action="StatusBoard">
+                                        <div class="room-chip-num">@RoomCount(st)</div>
+                                        <span class="badge bg-@RoomBadge(st)">@st</span>
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ================= TODAY'S OPERATIONS ================= *@
+
+@if (Model.CanSeeReservations)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="section-card">
+                <div class="section-card-header">Arrivals Today (@s.ArrivalsToday.Count)</div>
+                <div class="section-card-body p-0">
+                    @if (s.ArrivalsToday.Count == 0)
+                    {
+                        <div class="empty-state">No arrivals scheduled for today.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Guest</th><th>Reservation #</th><th>Status</th></tr></thead>
+                            <tbody>
+                            @foreach (var r in s.ArrivalsToday)
+                            {
+                                <tr class="clickable-row" onclick="location.href='@Url.Action("Details", "Reservations", new { id = r.Id })'">
+                                    <td>@r.Guest?.LastName, @r.Guest?.FirstName</td>
+                                    <td>@r.ReservationNumber</td>
+                                    <td><span class="badge bg-@ReservationBadge(r.Status)">@r.Status</span></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="section-card">
+                <div class="section-card-header">Departures Today (@s.DeparturesToday.Count)</div>
+                <div class="section-card-body p-0">
+                    @if (s.DeparturesToday.Count == 0)
+                    {
+                        <div class="empty-state">No check-outs scheduled for today.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Guest</th><th>Reservation #</th><th>Balance</th></tr></thead>
+                            <tbody>
+                            @foreach (var r in s.DeparturesToday)
+                            {
+                                <tr class="clickable-row" onclick="location.href='@Url.Action("Folio", "FrontDesk", new { reservationId = r.Id })'">
+                                    <td>@r.Guest?.LastName, @r.Guest?.FirstName</td>
+                                    <td>@r.ReservationNumber</td>
+                                    <td>@r.BalanceDue.ToString("N2")</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="section-card">
+                <div class="section-card-header">Pending Tasks</div>
+                <div class="section-card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <a asp-controller="Housekeeping" asp-action="Index">Housekeeping tasks</a>
+                            <span class="badge bg-@(s.PendingHousekeepingCount > 0 ? "warning" : "success")">@s.PendingHousekeepingCount</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <a asp-controller="MaintenanceRequests" asp-action="Index">Maintenance requests</a>
+                            <span class="badge bg-@(s.PendingMaintenanceCount > 0 ? "warning" : "success")">@s.PendingMaintenanceCount</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <a asp-controller="AccountsReceivable" asp-action="Index">Pending payments</a>
+                            <span class="badge bg-@(s.PendingReceivablesCount > 0 ? "warning" : "success")">@s.PendingReceivablesCount</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-2">
+                            <a asp-controller="Reservations" asp-action="Index" asp-route-status="Pending">Pending reservations</a>
+                            <span class="badge bg-@(ResCount(ReservationStatus.Pending) > 0 ? "warning" : "success")">@ResCount(ReservationStatus.Pending)</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ================= AMENITIES + INCOME VS EXPENSE (kept compact so it doesn't
+   dominate the page - see .trend-chart's reduced height in app.css) ================= *@
+
+<div class="row g-3 mb-4">
+    @if (Model.CanSeeAmenities)
+    {
+        <div class="col-lg-6">
+            <div class="section-card h-100">
+                <div class="section-card-header">
+                    <span>Amenities (@s.TotalAmenities)</span>
+                    <a asp-controller="Amenities" asp-action="StatusBoard" class="small">Full board &rarr;</a>
+                </div>
+                <div class="section-card-body">
+                    @if (s.TotalAmenities == 0)
+                    {
+                        <div class="empty-state">No amenities configured yet.</div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var st in s.AmenitiesByStatus.OrderByDescending(x => x.Value))
+                            {
+                                <a class="btn btn-sm btn-outline-@AmenityBadge(st.Key)" asp-controller="Amenities" asp-action="StatusBoard">
+                                    @st.Key <span class="badge bg-@AmenityBadge(st.Key) ms-1">@st.Value</span>
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    @if (Model.CanSeeFinancial)
+    {
+        <div class="col-lg-6">
+            <div class="section-card h-100">
+                <div class="section-card-header">
+                    <span>Income vs Expense</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        @foreach (var p in Enum.GetValues<TrendPeriod>())
+                        {
+                            <a class="btn btn-outline-secondary @(s.TrendPeriodUsed == p ? "active" : "")" asp-action="Index" asp-route-period="@p">@p</a>
+                        }
+                    </div>
+                </div>
+                <div class="section-card-body">
+                    @if (s.IncomeExpenseTrend.All(t => t.Income == 0 && t.Expense == 0))
+                    {
+                        <div class="empty-state">No income or expense data available for the selected period.</div>
+                    }
+                    else
+                    {
+                        <div class="trend-chart trend-chart-compact">
+                            @foreach (var t in s.IncomeExpenseTrend)
+                            {
+                                <div class="trend-bucket" title="@t.Label — Income @t.Income.ToString("N2"), Expense @t.Expense.ToString("N2")">
+                                    <div class="trend-bars">
+                                        <div class="trend-bar income" style="height:@(Math.Max(2, (double)(t.Income / maxTrend * 100)))%"></div>
+                                        <div class="trend-bar expense" style="height:@(Math.Max(2, (double)(t.Expense / maxTrend * 100)))%"></div>
+                                    </div>
+                                    <div class="trend-bucket-label">@t.Label</div>
+                                </div>
+                            }
+                        </div>
+                        <div class="d-flex gap-3 mt-2 small">
+                            <span><span class="d-inline-block rounded-circle bg-success" style="width:9px;height:9px"></span> Income</span>
+                            <span><span class="d-inline-block rounded-circle bg-danger" style="width:9px;height:9px"></span> Expense</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* ================= RECENT ACTIVITY + ALERTS ================= *@
+
+<div class="row g-3 mb-4">
+    @if (Model.CanSeeAuditTrail)
+    {
+        <div class="col-lg-6">
+            <div class="section-card h-100">
+                <div class="section-card-header">
+                    <span>Recent Activity</span>
+                    <a asp-area="Admin" asp-controller="AuditTrail" asp-action="Index" class="small">Full audit trail &rarr;</a>
+                </div>
+                <div class="section-card-body dashboard-feed-body">
+                    @if (s.RecentActivity.Count == 0)
+                    {
+                        <div class="empty-state">No activity recorded yet.</div>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var act in s.RecentActivity)
+                            {
+                                <li class="d-flex justify-content-between align-items-start py-2 border-bottom">
+                                    <span>
+                                        <span class="badge bg-@ActivityBadge(act.Action) me-1">@act.Action</span>
+                                        @act.Module@(act.RecordId is not null ? $" #{act.RecordId}" : "")
+                                        <span class="text-muted small">by @(act.UserName ?? "system")</span>
+                                    </span>
+                                    <span class="text-muted small text-nowrap ms-2">@RelativeTime(act.ActualDateTime)</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    <div class="@(Model.CanSeeAuditTrail ? "col-lg-6" : "col-12")">
+        <div class="section-card h-100" id="alerts">
+            <div class="section-card-header">Notifications &amp; Alerts</div>
+            <div class="section-card-body dashboard-feed-body">
+                @foreach (var a in s.Alerts)
+                {
+                    var routeValues = new Microsoft.AspNetCore.Routing.RouteValueDictionary(a.RouteValues);
+                    // Always set "area" explicitly (even to "") rather than only when a.Area is
+                    // non-empty - Url.Action otherwise inherits whatever area the CURRENT page is
+                    // in as an ambient value, sending a non-Area alert to e.g. "/Admin/Dashboard"
+                    // (404) when clicked from an Admin-area page.
+                    routeValues["area"] = a.Area ?? "";
+                    <a class="alert-list-item" href="@Url.Action(a.Action, a.Controller, routeValues)">
+                        <span class="alert-dot @AlertDot(a.Severity)"></span>
+                        <span>@a.Message</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .clickable-row { cursor: pointer; }
+    .clickable-row:hover { background: #f8f9fb; }
+</style>

@@ -1,0 +1,14 @@
+@model HotelResortMS.Web.Models.Inventory.SupplierEditViewModel
+<input type="hidden" asp-for="Id" />
+<div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /></div>
+<div class="row">
+    <div class="col-6 mb-3"><label asp-for="ContactPerson" class="form-label"></label><input asp-for="ContactPerson" class="form-control" /></div>
+    <div class="col-6 mb-3"><label asp-for="Phone" class="form-label"></label><input asp-for="Phone" class="form-control" /></div>
+</div>
+<div class="mb-3"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /></div>
+<div class="mb-3"><label asp-for="Address" class="form-label"></label><textarea asp-for="Address" class="form-control"></textarea></div>
+<div class="mb-3"><label asp-for="Notes" class="form-label"></label><textarea asp-for="Notes" class="form-control"></textarea></div>
+@if (Model.Id != 0)
+{
+    <div class="form-check mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+}

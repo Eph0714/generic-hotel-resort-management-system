@@ -1,0 +1,46 @@
+@model HotelResortMS.Web.Models.Reports.AmenityReportViewModel
+@{
+    ViewData["Title"] = "Amenity Reports";
+}
+<h3 class="mb-3">Amenity Reports</h3>
+@await Html.PartialAsync("_FilterBar", Model.Range)
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Amenity Status</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    @foreach (var s in Model.AmenitiesByStatus.OrderByDescending(x => x.Value))
+                    {
+                        <tr><td>@s.Key</td><td class="text-end">@s.Value</td></tr>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Amenity Revenue (Net)</div>
+            <div class="card-body"><h3 class="mb-0">@Model.AmenityRevenue.ToString("N2")</h3></div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+<table class="table table-sm bg-white">
+    <thead><tr><th>Amenity</th><th>Reservation</th><th>Start</th><th>End</th><th class="text-end">Rate</th></tr></thead>
+    <tbody>
+    @foreach (var u in Model.Usage)
+    {
+        <tr>
+            <td>@u.Amenity?.Name</td>
+            <td>@u.Reservation?.ReservationNumber</td>
+            <td>@u.StartDateTime.ToString("yyyy-MM-dd HH:mm")</td>
+            <td>@u.EndDateTime.ToString("yyyy-MM-dd HH:mm")</td>
+            <td class="text-end">@u.RateAmount.ToString("N2")</td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

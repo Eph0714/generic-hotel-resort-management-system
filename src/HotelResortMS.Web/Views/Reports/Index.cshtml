@@ -1,0 +1,14 @@
+@{
+    ViewData["Title"] = "Reports";
+}
+<h3 class="mb-3">Reports</h3>
+<div class="row g-3">
+    <div class="col-sm-6 col-lg-4"><a class="stat-card" asp-action="Hotel"><div class="stat-label">Hotel</div><div class="stat-value fs-5">Occupancy, Room Status, Room Revenue, Check-In/Out</div></a></div>
+    <div class="col-sm-6 col-lg-4"><a class="stat-card" asp-action="Reservations"><div class="stat-label">Reservations</div><div class="stat-value fs-5">Daily, Upcoming, Cancelled, No-Shows, Revenue</div></a></div>
+    <div class="col-sm-6 col-lg-4"><a class="stat-card" asp-action="Amenities"><div class="stat-label">Amenities</div><div class="stat-value fs-5">Status, Usage, Revenue</div></a></div>
+    <div class="col-sm-6 col-lg-4"><a class="stat-card" asp-action="POS"><div class="stat-label">POS / Sales</div><div class="stat-value fs-5">Daily Sales, Products, Categories, Users, Payment Method, Voids/Refunds</div></a></div>
+    <div class="col-sm-6 col-lg-4"><a class="stat-card" asp-action="Inventory"><div class="stat-label">Inventory</div><div class="stat-value fs-5">Current Stock, Low Stock, Stock In/Out, Waste, Valuation, Purchases</div></a></div>
+    <div class="col-sm-6 col-lg-4"><a class="stat-card" asp-action="Financial"><div class="stat-label">Financial</div><div class="stat-value fs-5">Revenue, Income, Expenses, Cash Flow, AR/AP, P&amp;L</div></a></div>
+    <div class="col-sm-6 col-lg-4"><a class="stat-card" asp-action="Discounts"><div class="stat-label">Discounts</div><div class="stat-value fs-5">By Type, By User, Manual Overrides, Gross vs Discount vs Net</div></a></div>
+    <div class="col-sm-6 col-lg-4"><a class="stat-card" asp-area="Admin" asp-controller="AuditTrail" asp-action="Index"><div class="stat-label">Audit Trail</div><div class="stat-value fs-5">Every recorded action, filterable by module/date</div></a></div>
+</div>

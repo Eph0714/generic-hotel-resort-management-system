@@ -1,0 +1,86 @@
+@model List<HotelResortMS.Core.Entities.HousekeepingTask>
+@{
+    ViewData["Title"] = "Housekeeping";
+    var staff = (List<HotelResortMS.Core.Entities.Identity.ApplicationUser>)ViewBag.Staff;
+}
+<h3 class="mb-3">Housekeeping</h3>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Active tasks</option>
+            @foreach (var s in Enum.GetValues<HotelResortMS.Core.Entities.HousekeepingStatus>())
+            {
+                <option value="@s" selected="@(s.Equals(ViewBag.Status))">@s</option>
+            }
+        </select>
+    </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-sm table-hover bg-white">
+    <thead><tr><th>Room</th><th>Status</th><th>Assigned To</th><th>Notes</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    @foreach (var t in Model)
+    {
+        <tr>
+            <td>@t.Room?.RoomNumber</td>
+            <td><span class="badge bg-secondary">@t.Status</span></td>
+            <td>@t.AssignedToUser?.FullName</td>
+            <td>@t.Notes</td>
+            <td class="text-end">
+                <form asp-action="Assign" asp-route-id="@t.Id" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <select name="assignedToUserId" class="form-select form-select-sm d-inline-block" style="width:auto" onchange="this.form.submit()">
+                        <option value="">-- Assign --</option>
+                        @foreach (var s in staff)
+                        {
+                            <option value="@s.Id" selected="@(s.Id == t.AssignedToUserId)">@s.FullName</option>
+                        }
+                    </select>
+                </form>
+                @if (t.Status == HotelResortMS.Core.Entities.HousekeepingStatus.Dirty)
+                {
+                    <form asp-action="Start" asp-route-id="@t.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Start Cleaning</button>
+                    </form>
+                }
+                @if (t.Status == HotelResortMS.Core.Entities.HousekeepingStatus.Cleaning)
+                {
+                    <form asp-action="Complete" asp-route-id="@t.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-success">Mark Clean</button>
+                    </form>
+                }
+                @if (t.Status == HotelResortMS.Core.Entities.HousekeepingStatus.Clean)
+                {
+                    <form asp-action="Inspect" asp-route-id="@t.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="passed" value="true" />
+                        <button type="submit" class="btn btn-sm btn-success">Pass Inspection</button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#failModal-@t.Id">Fail</button>
+                    <div class="modal fade" id="failModal-@t.Id" tabindex="-1">
+                        <div class="modal-dialog"><div class="modal-content">
+                            <form asp-action="Inspect" asp-route-id="@t.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="passed" value="false" />
+                                <div class="modal-header"><h5 class="modal-title">Fail Inspection - Room @t.Room?.RoomNumber</h5></div>
+                                <div class="modal-body"><input type="text" name="notes" class="form-control" placeholder="What needs redoing? (required)" required /></div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-danger">Fail &amp; Send Back</button>
+                                </div>
+                            </form>
+                        </div></div>
+                    </div>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

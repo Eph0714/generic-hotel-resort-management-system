@@ -1,0 +1,14 @@
+@model HotelResortMS.Web.Models.Operations.MaintenanceCategoryEditViewModel
+@{
+    ViewData["Title"] = "Edit Maintenance Category";
+}
+<h3 class="mb-3">Edit Maintenance Category</h3>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Edit" method="post" class="bg-white p-3 rounded border" style="max-width:420px">
+    <input type="hidden" asp-for="Id" />
+    <div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control"></textarea></div>
+    <div class="form-check mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

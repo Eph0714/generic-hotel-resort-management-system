@@ -1,0 +1,56 @@
+@model HotelResortMS.Web.Models.Reports.HotelReportViewModel
+@{
+    ViewData["Title"] = "Hotel Reports";
+}
+<h3 class="mb-3">Hotel Reports</h3>
+@await Html.PartialAsync("_FilterBar", Model.Range)
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Room Status (Occupancy)</div>
+            <div class="card-body">
+                <p><strong>Total Active Rooms:</strong> @Model.TotalRooms</p>
+                <table class="table table-sm mb-0">
+                    @foreach (var s in Model.RoomsByStatus.OrderByDescending(x => x.Value))
+                    {
+                        <tr><td>@s.Key</td><td class="text-end">@s.Value</td><td class="text-end">@((Model.TotalRooms == 0 ? 0 : s.Value * 100.0 / Model.TotalRooms).ToString("F1"))%</td></tr>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Room Revenue (@Model.Range.From.ToString("MMM d") - @Model.Range.To.ToString("MMM d, yyyy"))</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td>Gross</td><td class="text-end">@Model.RoomRevenueGross.ToString("N2")</td></tr>
+                    <tr><td>Discounts</td><td class="text-end">-@Model.RoomRevenueDiscount.ToString("N2")</td></tr>
+                    <tr class="fw-bold"><td>Net</td><td class="text-end">@Model.RoomRevenueNet.ToString("N2")</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Check-Ins (@Model.CheckIns.Count)</div>
+            <div class="table-responsive"><table class="table table-sm mb-0">
+                <thead><tr><th>Date/Time</th><th>Verified By</th></tr></thead>
+                <tbody>@foreach (var c in Model.CheckIns) { <tr><td>@c.ActualDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td><td>@c.VerifiedBy</td></tr> }</tbody>
+            </table></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Check-Outs (@Model.CheckOuts.Count)</div>
+            <div class="table-responsive"><table class="table table-sm mb-0">
+                <thead><tr><th>Date/Time</th><th>Processed By</th><th class="text-end">Final Balance</th></tr></thead>
+                <tbody>@foreach (var c in Model.CheckOuts) { <tr><td>@c.ActualDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td><td>@c.ProcessedBy</td><td class="text-end">@c.FinalBalance.ToString("N2")</td></tr> }</tbody>
+            </table></div>
+        </div>
+    </div>
+</div>

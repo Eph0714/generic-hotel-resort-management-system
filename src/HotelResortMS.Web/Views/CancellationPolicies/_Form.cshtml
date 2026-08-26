@@ -1,0 +1,17 @@
+@model HotelResortMS.Web.Models.Operations.CancellationPolicyEditViewModel
+<input type="hidden" asp-for="Id" />
+<div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /></div>
+<div class="mb-3"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control"></textarea></div>
+<div class="mb-3">
+    <label asp-for="Type" class="form-label"></label>
+    <select asp-for="Type" class="form-select" asp-items="Html.GetEnumSelectList<HotelResortMS.Core.Entities.CancellationPolicyType>()"></select>
+</div>
+<div class="row">
+    <div class="col-4 mb-3"><label asp-for="HoursBeforeCheckIn" class="form-label">Free-Cancellation Window (hours)</label><input asp-for="HoursBeforeCheckIn" type="number" class="form-control" /></div>
+    <div class="col-4 mb-3"><label asp-for="FeePercentage" class="form-label"></label><input asp-for="FeePercentage" type="number" step="0.01" class="form-control" /></div>
+    <div class="col-4 mb-3"><label asp-for="FixedFee" class="form-label"></label><input asp-for="FixedFee" type="number" step="0.01" class="form-control" /></div>
+</div>
+@if (Model.Id != 0)
+{
+    <div class="form-check mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+}

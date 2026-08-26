@@ -1,0 +1,55 @@
+@model List<HotelResortMS.Core.Entities.InventoryItem>
+@{
+    ViewData["Title"] = "Inventory";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Inventory</h3>
+    <a asp-action="Create" class="btn btn-primary btn-sm">+ Add New</a>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto"><input type="text" name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Search name or SKU" /></div>
+    <div class="col-auto form-check pt-1">
+        <input type="checkbox" name="lowStockOnly" value="true" class="form-check-input" id="lowStockOnly" checked="@((bool)ViewBag.LowStockOnly)" />
+        <label class="form-check-label small" for="lowStockOnly">Low stock only</label>
+    </div>
+    <div class="col-auto"><button type="submit" class="btn btn-sm btn-outline-secondary">Filter</button></div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-sm table-hover bg-white">
+    <thead><tr><th>SKU</th><th>Name</th><th>Location</th><th class="text-end">Stock</th><th>Unit</th><th class="text-end">Reorder Level</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    @foreach (var i in Model)
+    {
+        <tr class="@(i.CurrentStock <= i.ReorderLevel ? "table-warning" : "")">
+            <td>@i.Sku</td>
+            <td>@i.Name</td>
+            <td>@i.InventoryLocation?.Name</td>
+            <td class="text-end">@i.CurrentStock.ToString("N2")</td>
+            <td>@i.UnitOfMeasure?.Abbreviation</td>
+            <td class="text-end">@i.ReorderLevel.ToString("N2")</td>
+            <td>@(i.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end">
+                <a asp-action="StockCard" asp-route-id="@i.Id" class="btn btn-sm btn-outline-secondary">Stock Card</a>
+                <a asp-action="Adjust" asp-route-id="@i.Id" class="btn btn-sm btn-outline-primary">Adjust</a>
+                <a asp-action="Edit" asp-route-id="@i.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                @if (i.IsActive)
+                {
+                    <form asp-action="Deactivate" asp-route-id="@i.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Deactivate</button>
+                    </form>
+                }
+                <form asp-action="Delete" asp-route-id="@i.Id" method="post" class="d-inline" onsubmit="return confirm('Permanently delete this inventory item? This cannot be undone. It will be blocked if it has any history.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

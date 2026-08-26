@@ -1,0 +1,59 @@
+@model HotelResortMS.Web.Models.Reports.POSReportViewModel
+@{
+    ViewData["Title"] = "POS Reports";
+}
+<h3 class="mb-3">POS / Sales Reports</h3>
+@await Html.PartialAsync("_FilterBar", Model.Range)
+
+<div class="row g-3 mb-3">
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-label">Gross Sales</div><div class="stat-value">@Model.GrossSales.ToString("N2")</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-label">Discounts</div><div class="stat-value">@Model.TotalDiscounts.ToString("N2")</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-label">Net Sales</div><div class="stat-value">@Model.NetSales.ToString("N2")</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-label">Voids / Refunds</div><div class="stat-value">@Model.VoidCount / @Model.RefundCount</div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card"><div class="card-header">By Product</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <thead><tr><th>Product</th><th class="text-end">Qty</th><th class="text-end">Total</th></tr></thead>
+            <tbody>@foreach (var p in Model.ByProduct) { <tr><td>@p.ProductName</td><td class="text-end">@p.Quantity</td><td class="text-end">@p.Total.ToString("N2")</td></tr> }</tbody>
+        </table></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-header">By Category</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <tbody>@foreach (var c in Model.ByCategory) { <tr><td>@c.CategoryName</td><td class="text-end">@c.Total.ToString("N2")</td></tr> }</tbody>
+        </table></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-header">By User</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <tbody>@foreach (var u in Model.ByUser) { <tr><td>@u.User</td><td class="text-end">@u.Total.ToString("N2")</td></tr> }</tbody>
+        </table></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-header">By Payment Method</div>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <tbody>@foreach (var m in Model.ByPaymentMethod) { <tr><td>@m.Method</td><td class="text-end">@m.Total.ToString("N2")</td></tr> }</tbody>
+        </table></div></div>
+    </div>
+</div>
+
+<div class="table-responsive">
+<table class="table table-sm bg-white">
+    <thead><tr><th>POS #</th><th>Date/Time</th><th>User</th><th>Status</th><th class="text-end">Net</th></tr></thead>
+    <tbody>
+    @foreach (var s in Model.Sales)
+    {
+        <tr>
+            <td>@s.PosNumber</td>
+            <td>@s.ActualDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+            <td>@s.ProcessedBy</td>
+            <td><span class="badge bg-secondary">@s.Status</span></td>
+            <td class="text-end">@s.NetAmount.ToString("N2")</td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

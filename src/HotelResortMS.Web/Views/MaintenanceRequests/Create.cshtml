@@ -1,0 +1,43 @@
+@model HotelResortMS.Web.Models.Operations.MaintenanceRequestCreateViewModel
+@{
+    ViewData["Title"] = "Report Maintenance Issue";
+}
+<h3 class="mb-3">Report Maintenance Issue</h3>
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Create" method="post" class="bg-white p-3 rounded border" style="max-width:520px">
+    <div class="mb-3">
+        <label asp-for="MaintenanceCategoryId" class="form-label"></label>
+        <select asp-for="MaintenanceCategoryId" class="form-select">
+            <option value="">-- Select --</option>
+            @foreach (var c in Model.Categories)
+            {
+                <option value="@c.Id">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="row">
+        <div class="col-6 mb-3">
+            <label asp-for="RoomId" class="form-label">Room (optional)</label>
+            <select asp-for="RoomId" class="form-select">
+                <option value="">-- None --</option>
+                @foreach (var r in Model.Rooms)
+                {
+                    <option value="@r.Id">@r.RoomNumber</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 mb-3">
+            <label asp-for="EquipmentId" class="form-label">Equipment (optional)</label>
+            <select asp-for="EquipmentId" class="form-select">
+                <option value="">-- None --</option>
+                @foreach (var e in Model.EquipmentList)
+                {
+                    <option value="@e.Id">@e.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="mb-3"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control"></textarea></div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

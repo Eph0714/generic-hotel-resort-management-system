@@ -1,0 +1,63 @@
+@model List<HotelResortMS.Core.Entities.Payment>
+@{
+    ViewData["Title"] = "Payments";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Payments</h3>
+    <a asp-action="Create" class="btn btn-primary btn-sm">+ Record Payment</a>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+
+<div class="table-responsive">
+<table class="table table-sm table-hover bg-white">
+    <thead><tr><th>Payment #</th><th>Date/Time</th><th>Guest</th><th>Method</th><th class="text-end">Amount</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    @foreach (var p in Model)
+    {
+        <tr>
+            <td>@p.PaymentNumber</td>
+            <td>@p.ActualDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+            <td>@(p.Guest is null ? "-" : $"{p.Guest.LastName}, {p.Guest.FirstName}")</td>
+            <td>@p.Method</td>
+            <td class="text-end">@p.Amount.ToString("N2")</td>
+            <td><span class="badge bg-@(p.Status == HotelResortMS.Core.Entities.PaymentStatus.Completed ? "success" : "secondary")">@p.Status</span></td>
+            <td class="text-end">
+                @if (p.Status == HotelResortMS.Core.Entities.PaymentStatus.Completed)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#voidModal-@p.Id">Void</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#refundModal-@p.Id">Refund</button>
+
+                    <div class="modal fade" id="voidModal-@p.Id" tabindex="-1">
+                        <div class="modal-dialog"><div class="modal-content">
+                            <form asp-action="Void" asp-route-id="@p.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <div class="modal-header"><h5 class="modal-title">Void Payment @p.PaymentNumber</h5></div>
+                                <div class="modal-body"><input type="text" name="reason" class="form-control" placeholder="Reason (required)" required /></div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-danger">Void</button>
+                                </div>
+                            </form>
+                        </div></div>
+                    </div>
+                    <div class="modal fade" id="refundModal-@p.Id" tabindex="-1">
+                        <div class="modal-dialog"><div class="modal-content">
+                            <form asp-action="Refund" asp-route-id="@p.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <div class="modal-header"><h5 class="modal-title">Refund Payment @p.PaymentNumber</h5></div>
+                                <div class="modal-body"><input type="text" name="reason" class="form-control" placeholder="Reason (required)" required /></div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-warning">Refund</button>
+                                </div>
+                            </form>
+                        </div></div>
+                    </div>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

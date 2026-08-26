@@ -1,0 +1,51 @@
+@model HotelResortMS.Core.Entities.POSTransaction
+@{
+    ViewData["Title"] = "Receipt " + Model.PosNumber;
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Receipt @Model.PosNumber</h3>
+    <div>
+        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">Print</button>
+        <a asp-action="History" class="btn btn-sm btn-outline-secondary">Back to History</a>
+    </div>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+
+<div class="bg-white p-4 rounded border" style="max-width:520px">
+    <p class="text-muted mb-1">@Model.ActualDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm") &middot; Business Date @Model.BusinessDate.ToString("yyyy-MM-dd")</p>
+    <p class="mb-3">
+        Guest: @(Model.Guest is null ? "Walk-in" : $"{Model.Guest.LastName}, {Model.Guest.FirstName}")
+        @if (Model.GuestFolioId is not null) { <span class="badge bg-info text-dark">Room Charge</span> }
+        <span class="badge bg-@(Model.Status == HotelResortMS.Core.Entities.POSTransactionStatus.Completed ? "success" : "secondary")">@Model.Status</span>
+    </p>
+
+    <div class="table-responsive">
+    <table class="table table-sm">
+        <thead><tr><th>Item</th><th class="text-end">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr></thead>
+        <tbody>
+        @foreach (var d in Model.Details)
+        {
+            <tr>
+                <td>@d.ProductName</td>
+                <td class="text-end">@d.Quantity</td>
+                <td class="text-end">@d.UnitPrice.ToString("N2")</td>
+                <td class="text-end">@d.LineTotal.ToString("N2")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+
+    <div class="table-responsive">
+    <table class="table table-sm">
+        <tr><td>Gross Amount</td><td class="text-end">@Model.GrossAmount.ToString("N2")</td></tr>
+        <tr><td>Discount</td><td class="text-end">-@Model.DiscountAmount.ToString("N2")</td></tr>
+        <tr><td>Taxable Amount</td><td class="text-end">@Model.TaxableAmount.ToString("N2")</td></tr>
+        <tr><td>Tax</td><td class="text-end">@Model.TaxAmount.ToString("N2")</td></tr>
+        <tr><td>Service Charge</td><td class="text-end">@Model.ServiceChargeAmount.ToString("N2")</td></tr>
+        <tr class="fw-bold border-top"><td>Net Amount</td><td class="text-end">@Model.NetAmount.ToString("N2")</td></tr>
+    </table>
+    </div>
+
+    <p class="text-muted small mb-0">Processed by @Model.ProcessedBy</p>
+</div>
