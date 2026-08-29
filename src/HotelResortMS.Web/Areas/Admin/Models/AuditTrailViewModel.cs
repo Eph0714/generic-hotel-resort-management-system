@@ -11,4 +11,9 @@ public class AuditTrailViewModel
     public int Page { get; set; } = 1;
     public int TotalPages { get; set; } = 1;
     public List<string> Modules { get; set; } = new();
+
+    /// <summary>Current System Settings > Audit.RetentionDays value, shown so a Super
+    /// Admin can see at a glance how long entries stick around before the automatic
+    /// cleanup removes them.</summary>
+    public int RetentionDays { get; set; } = 3;
 }

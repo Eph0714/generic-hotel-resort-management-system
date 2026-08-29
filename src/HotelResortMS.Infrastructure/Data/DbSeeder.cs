@@ -126,6 +126,7 @@ public static class DbSeeder
         await SeedSettingIfMissingAsync(db, "Discount.PwdPercent", "20", "Discounts", "PWD discount percentage per current Philippine regulations - update if the law changes.");
         await SeedSettingIfMissingAsync(db, "Backup.ScheduleEnabled", "false", "Backup", "Whether ScheduledBackupHostedService runs an automatic daily backup (Section 50).");
         await SeedSettingIfMissingAsync(db, "Backup.ScheduleTimeOfDay", "02:00", "Backup", "Time of day (24h, server local time) the automatic daily backup runs, e.g. 02:00.");
+        await SeedSettingIfMissingAsync(db, "Audit.RetentionDays", "3", "Audit Trail", "Audit log entries older than this many days are automatically deleted. Super Admin can also purge entries manually from the Audit Trail screen.");
 
         await db.SaveChangesAsync();
 

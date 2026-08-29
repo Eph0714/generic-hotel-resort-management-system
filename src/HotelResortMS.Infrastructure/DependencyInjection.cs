@@ -76,6 +76,7 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddScoped<IHotelBrandingService, HotelBrandingService>();
         services.AddHostedService<ScheduledBackupHostedService>();
+        services.AddHostedService<AuditLogCleanupHostedService>();
 
         return services;
     }

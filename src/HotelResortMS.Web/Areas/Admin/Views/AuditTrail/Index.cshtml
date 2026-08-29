@@ -1,8 +1,33 @@
 @model HotelResortMS.Web.Areas.Admin.Models.AuditTrailViewModel
+@using HotelResortMS.Core.Common
 @{
     ViewData["Title"] = "Audit Trail";
+    var isSuperAdmin = User.IsInRole(SystemRoles.SuperAdmin);
 }
-<h3 class="mb-3">Audit Trail</h3>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h3 class="mb-0">Audit Trail</h3>
+        <p class="text-muted small mb-0">
+            Entries older than <strong>@Model.RetentionDays day@(Model.RetentionDays == 1 ? "" : "s")</strong> are deleted automatically.
+            @if (isSuperAdmin)
+            {
+                <text>Configurable under <strong>Audit.RetentionDays</strong> in System Settings.</text>
+            }
+        </p>
+    </div>
+    @if (isSuperAdmin)
+    {
+        <form asp-action="ClearAll" method="post" onsubmit="return confirm('Permanently delete EVERY audit trail entry? This cannot be undone.');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-danger">Clear All</button>
+        </form>
+    }
+</div>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert alert-success">@success</div>
+}
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-auto">
@@ -36,6 +61,10 @@
             <th>Action</th>
             <th>Record</th>
             <th>Reason</th>
+            @if (isSuperAdmin)
+            {
+                <th class="text-end">Actions</th>
+            }
         </tr>
     </thead>
     <tbody>
@@ -49,6 +78,15 @@
             <td>@log.Action</td>
             <td>@log.RecordId</td>
             <td>@log.Reason</td>
+            @if (isSuperAdmin)
+            {
+                <td class="text-end">
+                    <form asp-action="DeleteEntry" asp-route-id="@log.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this audit trail entry? This cannot be undone.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            }
         </tr>
     }
     </tbody>

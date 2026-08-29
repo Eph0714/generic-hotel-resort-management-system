@@ -6,6 +6,7 @@ obj/
 # Real MySQL dumps produced by Backup & Restore - contains real data (password hashes,
 # settings, seeded/test records), not source, and regenerable on demand - never committed.
 Backups/
+*.sql
 
 # User-uploaded branding assets (logo/banner) - managed runtime content, not source.
 src/HotelResortMS.Web/wwwroot/uploads/
